@@ -10,13 +10,13 @@ This tool lets you build everything on a single canvas, add layers (background, 
 
 ## Showcase types
 
-| Tab          | Files it generates             | Size                                         |
-|--------------|--------------------------------|----------------------------------------------|
-| Destacado (Featured)   | 1 GIF                | 630 px wide                                  |
-| Ilustración (Artwork)  | 2 GIFs (main + strip)| 506 px + 100 px (9 px hidden gap in between) |
-| Taller (Workshop)      | 5 GIFs               | 5 × 122 px (4 px hidden gap between each)    |
-| Adaptable              | 1 GIF                | 630 px, height follows the background        |
-| Avatar                 | 1 image              | 512 × 512 px                                 |
+| Tab       | Files it generates    | Size                                         |
+|-----------|-----------------------|----------------------------------------------|
+| Featured  | 1 GIF                 | 630 px wide                                  |
+| Artwork   | 2 GIFs (main + strip) | 506 px + 100 px (9 px hidden gap in between) |
+| Workshop  | 5 GIFs                | 5 × 122 px (4 px hidden gap between each)    |
+| Adaptive  | 1 GIF                 | 630 px, height follows the background        |
+| Avatar    | 1 image               | 512 × 512 px                                 |
 
 You choose the height (824 px by default).
 
@@ -32,15 +32,18 @@ You choose the height (824 px by default).
 - **Hex patcher:** changes the last byte of your GIFs from `0x3B` to `0x21`.
 - **Profile mockup**, **save/open project** (.json) and a **step-by-step guide** for uploading to Steam with the console commands.
 
-> The interface is in Spanish.
+- **English / Spanish:** switch the interface language with the **EN / ES** buttons at the top right. Your choice is remembered.
 
 ## How to use it
 
-1. Open `index.html` in Chrome, Brave or Edge (double-click). It only needs internet to load fonts and libraries.
-2. Pick the showcase type at the top (for example **Ilustración**).
-3. Add a background, character, text, frame and effects from the left panel. Drag in the preview to move the selected layer and use the mouse wheel to scale it.
-4. Click **Descargar GIFs** (Download GIFs).
-5. Follow the **Cómo subirlo** (How to upload) tab.
+**Online, nothing to download:** <https://pedropablochavez.github.io/steam-showcase-builder/>
+
+Or download `index.html` and open it in Chrome, Brave or Edge (double-click). It only needs internet to load fonts and libraries.
+
+1. Pick the showcase type at the top (for example **Artwork**).
+2. Add a background, character, text, frame and effects from the left panel. Drag in the preview to move the selected layer and use the mouse wheel to scale it.
+3. Click **Download GIFs**.
+4. Follow the **How to upload** tab.
 
 ## Uploading to Steam (summary)
 

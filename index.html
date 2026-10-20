@@ -139,6 +139,7 @@
     <button data-view="guide">Cómo subirlo</button>
   </nav>
   <div class="spacer"></div>
+  <div class="seg" id="langSeg" translate="no" title="Idioma / Language"><button data-lang="es">ES</button><button data-lang="en">EN</button></div>
   <button class="btn" id="btnSave" title="Guarda todo (incluidos tus archivos) en un .json">Guardar proyecto</button>
   <button class="btn" id="btnOpen">Abrir proyecto</button>
   <input type="file" id="projectFile" accept=".json,application/json" hidden>
@@ -319,6 +320,192 @@ async function copyText(txt, btn) {
   try { await navigator.clipboard.writeText(txt); btn.textContent = "¡Copiado!"; } catch { btn.textContent = "Cópialo a mano"; }
   setTimeout(() => (btn.textContent = "Copiar"), 1500);
 }
+
+/* =====================================================================
+   i18n: the UI is written in Spanish; a MutationObserver translates every
+   text node (and title attributes) to English when EN is selected.
+   ===================================================================== */
+let LANG = (() => { try { const s = localStorage.getItem("ssb-lang"); if (s === "es" || s === "en") return s; } catch {} return /^es/i.test(navigator.language || "") ? "es" : "en"; })();
+const EN = {
+  // header / static
+  "Optimizador": "Optimizer", "Cómo subirlo": "How to upload", "Guardar proyecto": "Save project", "Abrir proyecto": "Open project",
+  "Guarda todo (incluidos tus archivos) en un .json": "Saves everything (including your files) to a .json",
+  "FONDO": "BG", "PERSONAJE": "CHAR", "TEXTO": "TEXT", "MARCO": "FRAME", "EFECTOS": "EFFECTS", "EXPORTAR": "EXPORT",
+  "Destacado": "Featured", "Ilustración": "Artwork", "Taller": "Workshop", "Adaptable": "Adaptive",
+  "Descargar GIFs": "Download GIFs", "Capas": "Layers", "+ Personaje": "+ Character", "+ Texto": "+ Text", "+ Marco": "+ Frame", "+ Efecto": "+ Effect",
+  "Clic en una capa para editarla. Arrastra en la vista previa para moverla; rueda del mouse para escalar.": "Click a layer to edit it. Drag in the preview to move it; use the mouse wheel to scale it.",
+  "Optimizador de GIF": "GIF optimizer",
+  "Baja el peso de cualquier GIF para que entre en el límite de Steam (5 MB recomendado). Todo pasa en tu navegador.": "Shrink any GIF so it fits Steam's limit (5 MB recommended). Everything happens in your browser.",
+  "Arrastra un GIF aquí": "Drop a GIF here", "o haz clic para elegir": "or click to choose", "Optimizar": "Optimize", "Auto hasta el límite": "Auto down to the limit",
+  "Antes": "Before", "Después": "After", "Descargar": "Download", "Leyendo…": "Reading…", "Optimizando…": "Optimizing…",
+  "Cambia el último byte del GIF de": "Changes the GIF's last byte from", "a": "to",
+  ". Es el truco de la comunidad para que Steam no procese la animación al subirla.": ". It's the community trick to stop Steam from processing the animation when you upload it.",
+  "Suelta uno o varios GIFs": "Drop one or more GIFs", "o haz clic para elegirlos": "or click to choose them",
+  "Idioma / Language": "Language / Idioma",
+  // palette & option lists
+  "Blanco": "White", "Rojo": "Red", "Naranja": "Orange", "Lima": "Lime", "Verde": "Green", "Menta": "Mint", "Rosa": "Pink", "Violeta": "Violet",
+  "Amarillo": "Yellow", "Azul": "Blue", "Violeta profundo": "Deep violet", "Ámbar": "Amber", "Azul eléctrico": "Electric blue", "Negro": "Black",
+  "Color personalizado": "Custom color",
+  "Ninguno": "None", "Respiración": "Breathing", "Ola": "Wave", "Flotar": "Float", "Balanceo": "Sway", "Latido": "Pulse", "Temblor": "Shake",
+  "Giro 3D": "3D spin", "Zoom lento": "Slow zoom", "Luz": "Light", "Resplandor": "Glow", "Pegatina": "Sticker", "Eco": "Echo", "Sombra": "Shadow",
+  "Ola de letras": "Letter wave", "Máquina de escribir": "Typewriter",
+  "Sin marco": "No frame", "Clásico": "Classic", "Doble": "Double", "Esquinas": "Corners", "Neón": "Neon", "Por los lados": "Sides", "Inferior": "Bottom",
+  "2 franjas": "2 stripes", "Triángulos": "Triangles", "Puntos": "Dots", "Hormigas": "Marching ants", "Arcoíris": "Rainbow", "Película": "Film",
+  "Ornamental": "Ornate", "Espinas": "Thorns",
+  // background panel
+  "Ajustes de fondo": "Background settings", "Haz clic o arrastra el fondo": "Click or drag the background",
+  "Imagen, GIF animado, WebP o video (MP4/WEBM). Para fondos de Steam usa el de 1920 px.": "Image, animated GIF, WebP or video (MP4/WEBM). For Steam backgrounds use the 1920 px one.",
+  "estático": "static", "Cargando…": "Loading…",
+  "¿Quieres un fondo animado de la Tienda de puntos? Búscalo en": "Want an animated Points Shop background? Find it on", "el mercado": "the Market",
+  "o en": "or on", ", descárgalo y súbelo aquí.": ", download it and upload it here.",
+  "Cubrir": "Cover", "Ajustar ancho": "Fit width", "Ajustar alto": "Fit height", "Alinear con perfil": "Align with profile",
+  "Escala el fondo a 1920 px y lo corta en la posición exacta del escaparate, para que se funda con tu fondo de perfil": "Scales the background to 1920 px and crops it at the exact position of the showcase, so it blends into your profile background",
+  "Inicio del fondo (s)": "Background start (s)", "Color de relleno": "Fill color", "Quitar fondo": "Remove background",
+  "Corrección": "Correction", "Brillo": "Brightness", "Contraste": "Contrast", "Saturación": "Saturation", "Tono": "Hue", "Desenfoque": "Blur",
+  "Restablecer corrección": "Reset correction",
+  // character panel
+  "Subir personaje": "Upload character", "Haz clic o arrastra un archivo": "Click or drag a file",
+  "PNG/JPG/GIF/WEBP o video del personaje. Cada archivo crea una capa nueva.": "PNG/JPG/GIF/WEBP or video of the character. Each file creates a new layer.",
+  "Primero sube un personaje.": "Upload a character first.",
+  "Quitar fondo rápido (color de las esquinas)": "Quick background removal (corner color)",
+  "Eliminación de fondo con IA (gratis, en tu PC)": "AI background removal (free, on your PC)",
+  "Descargando modelo IA (~40 MB, solo la 1ª vez)…": "Downloading AI model (~40 MB, first time only)…", "Quitando fondo…": "Removing background…",
+  "Clave de color (chroma key)": "Color key (chroma key)", "Color a borrar": "Color to remove", "verde/azul de pantalla, o el color del fondo": "green/blue screen, or the background color",
+  "Tolerancia": "Tolerance", "Suavizado del borde": "Edge softness", "Restaurar original": "Restore original",
+  "La IA corre en tu navegador con @imgly/background-removal (solo imágenes estáticas).": "The AI runs in your browser using @imgly/background-removal (static images only).",
+  "Transformación": "Transform", "Escala": "Scale", "Rotación": "Rotation", "X (centro)": "X (center)", "Y (centro)": "Y (center)", "Opacidad": "Opacity",
+  "Voltear horizontal": "Flip horizontally", "Centrar X": "Center X", "Pegar abajo": "Stick to bottom", "Animación": "Animation",
+  "Fuerza de animación": "Animation strength", "Velocidad (ciclos por bucle)": "Speed (cycles per loop)", "Efectos del personaje": "Character effects",
+  "Color": "Color", "Intensidad": "Intensity", "Integrar en el fondo": "Blend into background", "No": "No", "Sí": "Yes",
+  "Tiñe al personaje con el color promedio del fondo para que no parezca pegado.": "Tints the character with the background's average color so it doesn't look pasted on.",
+  "Eliminar personaje": "Delete character", "Personaje animado: el chroma se calcula cuadro a cuadro.": "Animated character: the chroma key is computed frame by frame.",
+  "La IA solo funciona con imágenes estáticas. Para GIF o video usa la clave de color (chroma).": "The AI only works with static images. For GIFs or video use the color key (chroma).",
+  "No se pudo usar la IA:": "Couldn't use the AI:", "Prueba con la clave de color.": "Try the color key instead.", "No se pudo cargar:": "Couldn't load:",
+  "No se pudo abrir el proyecto:": "Couldn't open the project:", "formato de video no soportado": "unsupported video format",
+  // text panel
+  "Textos": "Texts", "+ Agregar texto": "+ Add text", "Ajustes de texto": "Text settings", "Texto (Enter = nueva línea)": "Text (Enter = new line)",
+  "Fuente": "Font", "Fuente al azar": "Random font", "Posición": "Position", "Centro": "Center", "Centro panel grande": "Main panel center", "Centro tira": "Strip center",
+  "Tamaño del texto": "Text size", "Espaciado entre letras": "Letter spacing", "Orientación del texto": "Text orientation", "Horizontal": "Horizontal",
+  "Apilado": "Stacked", "De lado": "Sideways", "Color del texto": "Text color", "Degradado": "Gradient", "Segundo color": "Second color", "Borde": "Outline",
+  "Grosor del borde": "Outline width", "Intensidad de animación": "Animation intensity", "Ver menos": "Show less", "Eliminar texto": "Delete text",
+  // frame / effects
+  "Selección de marco": "Frame selection", "Configuración": "Settings", "Tipo de marco": "Frame type", "Animado": "Animated", "Estático": "Static",
+  "Color del marco": "Frame color", "Opacidad del marco": "Frame opacity", "Opacidad del contorno": "Outline opacity", "Grosor": "Thickness",
+  "Margen interior": "Inner margin", "Velocidad": "Speed", "Restablecer configuración del marco": "Reset frame settings",
+  "El marco se ajusta a cada parte del escaparate por separado (en Ilustración y Taller cada pieza tiene su propio marco).": "The frame fits each part of the showcase separately (in Artwork and Workshop every piece gets its own frame).",
+  "Efectos": "Effects", "Color de efectos": "Effects color", "Densidad": "Density", "Tamaño": "Size", "Restablecer configuración de efectos": "Reset effects settings",
+  "Activado": "On", "Desactivado": "Off",
+  // export panel
+  "Modo GIF": "GIF mode", "Duración del bucle (s)": "Loop duration (s)", "Óptimo": "Optimal", "Ciclo completo": "Full cycle",
+  "Óptimo = más nitidez, el fondo se repite. Ciclo completo = todo el fondo, pero pesa más.": "Optimal = sharper, the background loops. Full cycle = the whole background, but heavier.",
+  "Calidad y peso": "Quality and size", "Colores por cuadro": "Colors per frame", "Límite por archivo (MB)": "Limit per file (MB)",
+  "Optimizar automáticamente si pasa el límite": "Optimize automatically if over the limit", "Truco hex (último byte 3B → 21)": "Hex trick (last byte 3B → 21)",
+  "Prefijo de los archivos": "File name prefix",
+  "Las exportaciones GIF pueden cambiar ligeramente los colores y detalles pequeños porque el formato usa una paleta de 256 colores.": "GIF exports may slightly change colors and small details because the format uses a 256-color palette.",
+  "Exportar": "Export", "Descargar PNG estático (sin límite de peso)": "Download static PNG (no size limit)",
+  "Generando…": "Generating…", "Listo ✓": "Done ✓", "imagen estática": "static image", "⬇ Todo en ZIP": "⬇ All as ZIP",
+  // layers & toolbar
+  "Fondo": "Background", "Marco": "Frame", "Efecto": "Effect", "Subir": "Move up", "Bajar": "Move down", "El fondo siempre va abajo": "The background always stays at the bottom",
+  "Mostrar/ocultar": "Show/hide", "Alto": "Height", "Alto = fondo": "Height = background", "Alto máx. de recorte": "Max crop height", "Recorte": "Crop",
+  "Abajo": "Bottom", "Ambos lados": "Both sides", "Arriba": "Top", "⏸ Pausa": "⏸ Pause", "Guías": "Guides", "Mockup de perfil": "Profile mockup",
+  "Escaparate de ilustración destacada": "Featured Artwork Showcase", "Escaparate de ilustraciones": "Artwork Showcase", "Mi escaparate de Workshop": "My Workshop Showcase",
+  // optimizer / hex
+  "Ajustes de compresión": "Compression settings", "Límite de colores de paleta": "Palette color limit", "Usar 1 de cada N cuadros": "Use 1 of every N frames",
+  "Límite (MB) para Auto": "Limit (MB) for Auto", "Truco hex (3B → 21)": "Hex trick (3B → 21)",
+  // guide
+  "Copiar": "Copy", "¡Copiado!": "Copied!", "Cópialo a mano": "Copy it manually", "(carácter invisible U+2800)": "(invisible character U+2800)",
+  "Cómo subirlo a Steam": "How to upload it to Steam",
+  "El primer espacio de escaparate se desbloquea en el nivel 10 de Steam y luego uno más cada 10 niveles. Usa el navegador de PC (no la app de Steam).": "The first showcase slot unlocks at Steam level 10, then one more every 10 levels. Use a desktop web browser (not the Steam app).",
+  "Capturas": "Screenshots",
+  "Abre la página para subir material gráfico:": "Open the artwork upload page:",
+  ". Si Steam pregunta de dónde viene la imagen, elige la opción que dice que no es de un juego.": ". If Steam asks where the image comes from, choose the option saying it's not from a game.",
+  "Elige el archivo ancho: steam_main.gif (506 px).": "Choose the wide file: steam_main.gif (506 px).",
+  "Elige el único archivo: steam_featured.gif (630 px).": "Choose the only file: steam_featured.gif (630 px).",
+  "Elige steam_main.gif (exporta en modo Ilustración).": "Choose steam_main.gif (export in Artwork mode).",
+  "Sube las partes estrictamente en orden: steam_workshop_1.gif primero.": "Upload the parts strictly in order: steam_workshop_1.gif first.",
+  "En el título pega el carácter invisible (así no aparece texto debajo del escaparate):": "Paste the invisible character in the title (so no text shows under the showcase):",
+  "Abre la consola: F12 → pestaña": "Open the console: F12 → the", ". Pega este comando y presiona": " tab. Paste this command and press",
+  "Si la consola no te deja pegar, escribe a mano allow pasting (o «permitir pegar») y Enter, y vuelve a pegarlo. No pasa nada visible: es normal.": "If the console won't let you paste, type allow pasting by hand and press Enter, then paste it again. Nothing visible happens: that's normal.",
+  "Cierra la consola, marca «Certifico que he creado este material gráfico» y pulsa": "Close the console, tick the box certifying you created this artwork and click",
+  "Guardar y continuar": "Save and Continue",
+  "Repite todo con steam_side.gif (100 px) como una obra aparte.": "Repeat everything with steam_side.gif (100 px) as a separate artwork.",
+  "Perfil → Modificar perfil → Escaparates → Escaparate de ilustraciones. Haz clic en la franja negra de cada espacio y elige: main en el grande, side en el chico. Guarda.": "Profile → Edit Profile → Featured Showcase → Artwork Showcase. Click the black strip in each slot and choose: main in the big one, side in the small one. Save.",
+  "Modificar perfil → Escaparates → Escaparate de ilustración destacada → elige la obra.": "Edit Profile → Featured Showcase → Featured Artwork Showcase → choose the artwork.",
+  "Repite con steam_side.gif.": "Repeat with steam_side.gif.", "Modificar perfil → Escaparate de capturas → elige las dos.": "Edit Profile → Screenshot Showcase → choose both.",
+  "El carácter invisible va SOLO en el título de la parte 1. A las demás ponles 2, 3, 4 y 5 para reconocerlas.": "The invisible character goes ONLY in the title of part 1. Name the others 2, 3, 4 and 5 so you can tell them apart.",
+  "Repite para las partes 2 a 5 (el comando se pega cada vez).": "Repeat for parts 2 to 5 (paste the command every time).",
+  "Modificar perfil → Escaparates → Mi escaparate de Workshop → acomoda las 5 obras en orden. Si se ven desfasadas, recarga la página.": "Edit Profile → Featured Showcase → My Workshop Showcase → arrange the 5 items in order. If they look out of sync, reload the page.",
+  "Steam solo acepta avatares estáticos subidos por ti (los animados vienen de la Tienda de puntos). Exporta PNG estático y súbelo en Modificar perfil → Avatar.": "Steam only accepts static avatars you upload (animated ones come from the Points Shop). Export a static PNG and upload it in Edit Profile → Avatar.",
+  "Escaparate de ilustraciones (506 + 100)": "Artwork Showcase (506 + 100)", "Escaparate de ilustración destacada (630)": "Featured Artwork Showcase (630)",
+  "Escaparate de capturas (506 + 100)": "Screenshot Showcase (506 + 100)", "Escaparate de Workshop (5 partes)": "Workshop Showcase (5 parts)", "Avatar (512×512)": "Avatar (512×512)",
+  "Problemas comunes": "Common problems", "A la derecha queda una franja negra:": "There's a black strip on the right:",
+  "no subiste la parte angosta, o elegiste el escaparate destacado en vez del de ilustraciones.": "you didn't upload the narrow part, or you picked the Featured Artwork showcase instead of the Artwork one.",
+  "Aparece texto debajo:": "Text shows underneath:", "el título tenía un espacio normal; usa el carácter invisible.": "the title had a normal space; use the invisible character.",
+  "La imagen sale recortada o chica:": "The image is cropped or small:", "el comando de consola no se ejecutó (falta Enter).": "the console command didn't run (Enter is missing).",
+  "El GIF no se anima o pesa mucho:": "The GIF doesn't animate or is too heavy:", "usa el Optimizador y deja el truco hex activado.": "use the Optimizer and keep the hex trick on.",
+};
+const EN_PATTERNS = [
+  [/^Mostrar todo \((\d+)\)$/, "Show all ($1)"],
+  [/^Bucle (.+)$/, "Loop $1"],
+  [/^(\d+) cuadros$/, "$1 frames"],
+  [/^Se generan (\d+) archivo\(s\): (.*)$/, "$1 file(s) will be generated: $2"],
+  [/^Optimizando (\d+) archivo\(s\): (\d+) colores(?:, 1 de cada (\d+) cuadros)?…$/, (_, n, c, s) => `Optimizing ${n} file(s): ${c} colors${s ? `, 1 of every ${s} frames` : ""}…`],
+  [/^Listo, pero (\d+) archivo\(s\) pasan de ([\d.]+) MB\. Baja duración, FPS o alto\.$/, "Done, but $1 file(s) are over $2 MB. Lower the duration, FPS or height."],
+  [/^Por debajo de ([\d.]+) MB ✓$/, "Under $1 MB ✓"],
+  [/^Todavía pasa de ([\d.]+) MB$/, "Still over $1 MB"],
+  [/^Probando (\d+) colores, (\d+)%, 1\/(\d+)…$/, "Trying $1 colors, $2%, 1/$3…"],
+  [/^• ya parcheado (.*)$/, "• already patched $1"],
+  [/^IA: (.*)$/, "AI: $1"],
+  [/^(.+) \+ Glitch$/, (_, a) => `${tr(a)} + Glitch`],
+];
+function tr(s) {
+  if (LANG === "es" || !s) return s;
+  const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(s), core = m[2];
+  if (!core) return s;
+  let out = EN[core];
+  if (out == null) for (const [re, rep] of EN_PATTERNS) if (re.test(core)) { out = core.replace(re, rep); break; }
+  if (out == null && core.includes(" · ")) {
+    const parts = core.split(" · "), tp = parts.map((p) => tr(p));
+    if (tp.some((p, i) => p !== parts[i])) out = tp.join(" · ");
+  }
+  return out == null ? s : m[1] + out + m[3];
+}
+const I18N_ATTRS = ["title", "aria-label"];
+function i18nSkip(n) { const e = n.nodeType === 1 ? n : n.parentElement; return !e || !!e.closest('[translate="no"], textarea, script, style, code'); }
+function translateNode(n) {
+  if (n.nodeType === 3) {
+    if (i18nSkip(n)) return;
+    if (n.__es === undefined || n.data !== n.__tr) n.__es = n.data; // first time, or changed by app code
+    const out = tr(n.__es);
+    n.__tr = out;
+    if (n.data !== out) n.data = out;
+  } else if (n.nodeType === 1) {
+    if (i18nSkip(n)) return;
+    for (const a of I18N_ATTRS) {
+      if (!n.hasAttribute(a)) continue;
+      n.__esA ||= {}; n.__trA ||= {};
+      const cur = n.getAttribute(a);
+      if (n.__esA[a] === undefined || cur !== n.__trA[a]) n.__esA[a] = cur;
+      const out = tr(n.__esA[a]); n.__trA[a] = out;
+      if (cur !== out) n.setAttribute(a, out);
+    }
+    for (const c of n.childNodes) translateNode(c);
+  }
+}
+new MutationObserver((muts) => {
+  for (const m of muts) {
+    if (m.type === "characterData") translateNode(m.target);
+    else m.addedNodes.forEach(translateNode);
+  }
+}).observe(document.body, { subtree: true, childList: true, characterData: true });
+function setLang(l) {
+  LANG = l;
+  try { localStorage.setItem("ssb-lang", l); } catch {}
+  document.documentElement.lang = l;
+  document.querySelectorAll("#langSeg button").forEach((b) => b.classList.toggle("on", b.dataset.lang === l));
+  translateNode(document.body);
+}
+$("langSeg").onclick = (e) => { const b = e.target.closest("button"); if (b) setLang(b.dataset.lang); };
 
 /* =====================================================================
    Media loading (images, animated GIF/WebP via ImageDecoder, video)
@@ -1232,7 +1419,7 @@ function drawPreview() {
       vctx.globalAlpha = 0.9; vctx.drawImage(mediaFrame(bg.media, t).src, pad - T().src * 1 + 0, -200, 1920, bg.media.h * sc); vctx.globalAlpha = 1;
     }
     vctx.fillStyle = "rgba(0,0,0,0.55)"; vctx.fillRect(0, 0, vw, vh);
-    vctx.fillStyle = "#c6d4df"; vctx.font = "15px Inter, sans-serif"; vctx.fillText({ featured: "Escaparate de ilustración destacada", artwork: "Escaparate de ilustraciones", workshop: "Mi escaparate de Workshop", adaptive: "Escaparate de ilustración destacada", avatar: "Avatar" }[S.type], pad, 30);
+    vctx.fillStyle = "#c6d4df"; vctx.font = "15px Inter, sans-serif"; vctx.fillText(tr({ featured: "Escaparate de ilustración destacada", artwork: "Escaparate de ilustraciones", workshop: "Mi escaparate de Workshop", adaptive: "Escaparate de ilustración destacada", avatar: "Avatar" }[S.type]), pad, 30);
   } else { vctx.clearRect(0, 0, vw, vh); }
   const zones = T().zones;
   for (const z of zones) vctx.drawImage(comp, z.x, 0, z.w, h, pad + z.x, pad + head, z.w, h);
@@ -1400,7 +1587,7 @@ async function setBgMedia(file, d) {
     if (isAnimatedMedia(L.media)) S.duration = +clamp(L.media.duration, 0.5, 10).toFixed(2);
     if (S.type === "adaptive") { L.zoom = 630 / L.media.w; L.x = 0; L.y = 0; }
     else if (L.media.w >= 1800) fitBg("profile"); else fitBg("cover");
-  } catch (e) { alert("No se pudo cargar: " + e.message); }
+  } catch (e) { alert(tr("No se pudo cargar:") + " " + tr(e.message)); }
   renderPanel(); renderToolbar();
 }
 
@@ -1445,7 +1632,7 @@ function insertLayer(L) {
 }
 
 async function aiRemove(L, btn) {
-  if (isAnimatedMedia(L.media)) { alert("La IA solo funciona con imágenes estáticas. Para GIF o video usa la clave de color (chroma)."); return; }
+  if (isAnimatedMedia(L.media)) { alert(tr("La IA solo funciona con imágenes estáticas. Para GIF o video usa la clave de color (chroma).")); return; }
   btn.disabled = true; btn.textContent = "Descargando modelo IA (~40 MB, solo la 1ª vez)…";
   try {
     const mod = await import("https://esm.sh/@imgly/background-removal@1.4.5");
@@ -1455,7 +1642,7 @@ async function aiRemove(L, btn) {
     L.orig ||= L.media;
     L.media = await loadMedia(new File([blob], L.media.name.replace(/\.\w+$/, "") + "_sin_fondo.png", { type: "image/png" }));
     L._cache?.clear();
-  } catch (e) { console.error(e); alert("No se pudo usar la IA: " + e.message + "\nPrueba con la clave de color."); }
+  } catch (e) { console.error(e); alert(tr("No se pudo usar la IA:") + " " + e.message + "\n" + tr("Prueba con la clave de color.")); }
   renderPanel();
 }
 function quickCutout(L) {
@@ -1473,7 +1660,7 @@ function panelChar() {
   if (!L || L.kind !== "char") { L = list[list.length - 1]; if (L) S.sel = L.id; }
   panel.append(sec("Subir personaje",
     dropZone("Haz clic o arrastra un archivo", "image/*,video/*", async (f, d) => { d.textContent = "Cargando…"; try { await addCharFromFile(f); } catch (e) { alert(e.message); renderPanel(); } }, "PNG/JPG/GIF/WEBP o video del personaje. Cada archivo crea una capa nueva."),
-    list.length > 1 ? el("div", { class: "chips", style: "margin-top:8px" }, list.map((c) => el("button", { class: "chip" + (c === L ? " on" : ""), onclick: () => { S.sel = c.id; renderPanel(); } }, c.name.slice(0, 18)))) : null));
+    list.length > 1 ? el("div", { class: "chips", style: "margin-top:8px" }, list.map((c) => el("button", { class: "chip" + (c === L ? " on" : ""), translate: "no", onclick: () => { S.sel = c.id; renderPanel(); } }, c.name.slice(0, 18)))) : null));
   if (!L) { panel.append(el("p", { class: "note" }, "Primero sube un personaje.")); return; }
   const clear = () => L._cache?.clear();
   const animated = isAnimatedMedia(L.media);
@@ -1526,8 +1713,8 @@ function panelText() {
   let L = selLayer();
   if (!L || L.kind !== "text") { L = list[list.length - 1]; if (L) S.sel = L.id; }
   panel.append(sec("Textos",
-    el("div", { class: "chips" }, list.map((t) => el("button", { class: "chip" + (t === L ? " on" : ""), onclick: () => { S.sel = t.id; renderPanel(); } }, (t.text || "…").slice(0, 16))),
-      el("button", { class: "chip", onclick: () => addTextLayer("TEXTO") }, "+ Agregar texto"))));
+    el("div", { class: "chips" }, list.map((t) => el("button", { class: "chip" + (t === L ? " on" : ""), translate: "no", onclick: () => { S.sel = t.id; renderPanel(); } }, (t.text || "…").slice(0, 16))),
+      el("button", { class: "chip", onclick: () => addTextLayer(tr("TEXTO")) }, "+ Agregar texto"))));
   if (!L) return;
   const ta = el("textarea", {}, L.text);
   ta.oninput = () => { L.text = ta.value; L.name = ta.value.split("\n")[0] || "Texto"; renderLayers(); };
@@ -1637,7 +1824,7 @@ function renderLayers() {
     const ico = el("div", { class: "ico" }, ICONS[L.kind]);
     if ((L.kind === "bg" || L.kind === "char") && L.media) { const c = canvas(26, 26); const x = c.getContext("2d"); const s = mediaFrame(L.media, 0).src; const k = Math.max(26 / L.media.w, 26 / L.media.h); x.drawImage(s, (26 - L.media.w * k) / 2, (26 - L.media.h * k) / 2, L.media.w * k, L.media.h * k); ico.innerHTML = ""; ico.append(c); }
     const row = el("div", { class: "layer" + (S.sel === L.id ? " sel" : "") + (L.visible ? "" : " hidden") },
-      ico, el("span", { class: "nm" }, layerLabel(L)),
+      ico, el("span", { class: "nm", translate: L.kind === "text" || L.kind === "char" ? "no" : null }, layerLabel(L)),
       L.kind !== "bg" ? el("button", { title: "Subir", onclick: (e) => { e.stopPropagation(); if (idx < S.layers.length - 1) { [S.layers[idx], S.layers[idx + 1]] = [S.layers[idx + 1], S.layers[idx]]; renderLayers(); } } }, "▲") : null,
       L.kind !== "bg" ? el("button", { title: "Bajar", onclick: (e) => { e.stopPropagation(); if (idx > 1) { [S.layers[idx], S.layers[idx - 1]] = [S.layers[idx - 1], S.layers[idx]]; renderLayers(); } } }, "▼") : el("span", { title: "El fondo siempre va abajo", style: "color:var(--muted)" }, "🔒"),
       el("button", { title: "Mostrar/ocultar", onclick: (e) => { e.stopPropagation(); L.visible = !L.visible; renderLayers(); } }, L.visible ? "👁" : "—"));
@@ -1646,7 +1833,7 @@ function renderLayers() {
   });
 }
 $("addChar").onclick = () => { S.cat = "char"; S.sel = null; renderPanel(); };
-$("addText").onclick = () => addTextLayer("TEXTO");
+$("addText").onclick = () => addTextLayer(tr("TEXTO"));
 $("addFrame").onclick = () => { const L = ensureFrame(); if (L.style === "none") L.style = "classic"; S.cat = "frame"; renderPanel(); };
 $("addEffect").onclick = () => { const L = ensureEffect(); if (L.style === "none") L.style = "particleFlow"; S.cat = "effect"; renderPanel(); };
 $("cats").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.cat = b.dataset.cat; renderPanel(); };
@@ -1811,7 +1998,7 @@ $("projectFile").onchange = async () => {
     L_effectColorIsAuto = (layer("effect")?.color ?? "auto") === "auto";
     document.querySelectorAll("#typeTabs button").forEach((x) => x.classList.toggle("on", x.dataset.type === S.type));
     startT = performance.now(); renderToolbar(); renderPanel();
-  } catch (e) { alert("No se pudo abrir el proyecto: " + e.message); }
+  } catch (e) { alert(tr("No se pudo abrir el proyecto:") + " " + e.message); }
   $("projectFile").value = "";
 };
 
@@ -1913,7 +2100,7 @@ const INVISIBLE = "⠀";
 function cmdBlock(txt, label = "Copiar") {
   const b = el("button", { class: "btn small" }, label);
   b.onclick = () => copyText(txt, b);
-  return el("pre", { class: "cmd" }, txt === INVISIBLE ? "(carácter invisible U+2800)" : txt, b);
+  return el("pre", { class: "cmd" }, txt === INVISIBLE ? "(carácter invisible U+2800)" : el("span", { translate: "no" }, txt), b);
 }
 function renderGuide() {
   const g = $("guidePage"); g.innerHTML = "";
@@ -1974,6 +2161,7 @@ $("viewNav").onclick = (e) => {
 renderGuide();
 renderToolbar();
 renderPanel();
+setLang(LANG);
 loop();
 window.__builder = { S, loadMedia, addCharFromFile, addTextLayer, setBgMedia, exportAll, encodeZones, renderAt, layer, ensureFrame, ensureEffect, renderPanel, FX, EFFECTS, TEXT_ANIMS, FRAMES, getLastFiles: () => lastFiles };
 </script>
