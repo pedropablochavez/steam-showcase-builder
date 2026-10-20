@@ -394,7 +394,8 @@ const EN = {
   "Margen interior": "Inner margin", "Velocidad": "Speed", "Restablecer configuración del marco": "Reset frame settings",
   "El marco se ajusta a cada parte del escaparate por separado (en Ilustración y Taller cada pieza tiene su propio marco).": "The frame fits each part of the showcase separately (in Artwork and Workshop every piece gets its own frame).",
   "Efectos": "Effects", "Color de efectos": "Effects color", "Densidad": "Density", "Tamaño": "Size", "Restablecer configuración de efectos": "Reset effects settings",
-  "Activado": "On", "Desactivado": "Off",
+  "Activado": "On", "Desactivado": "Off", "Capas de efectos": "Effect layers", "+ Agregar efecto": "+ Add effect", "Eliminar efecto": "Delete effect",
+  "Puedes apilar varios efectos: cada uno es una capa con su propio color, opacidad y velocidad.": "You can stack several effects: each one is a layer with its own color, opacity and speed.",
   // export panel
   "Modo GIF": "GIF mode", "Duración del bucle (s)": "Loop duration (s)", "Óptimo": "Optimal", "Ciclo completo": "Full cycle",
   "Óptimo = más nitidez, el fondo se repite. Ciclo completo = todo el fondo, pero pesa más.": "Optimal = sharper, the background loops. Full cycle = the whole background, but heavier.",
@@ -596,7 +597,7 @@ function makeText(text = "TEXTO") {
     anim: "none", animStr: 60, animSpeed: 1 };
 }
 function makeFrame() { return { id: "frame", kind: "frame", name: "Marco", visible: true, style: "classic", animated: false, color: "#ffffff", opacity: 100, contour: 60, width: 4, inset: 0, speed: 1 }; }
-function makeEffect() { return { id: "effect", kind: "effect", name: "Efecto", visible: true, style: "particleFlow", color: "auto", bright: 100, opacity: 85, density: 50, size: 50, speed: 1, glitch: false, glitchStr: 50 }; }
+function makeEffect() { return { id: newId("effect"), kind: "effect", seed: Math.floor(Math.random() * 1000), name: "Efecto", visible: true, style: "particleFlow", color: "auto", bright: 100, opacity: 85, density: 50, size: 50, speed: 1, glitch: false, glitchStr: 50 }; }
 S.layers.push(makeBg());
 
 const T = () => TYPES[S.type];
@@ -644,8 +645,8 @@ function renderAt(ctx, time, forExport = false) {
     } catch (e) { console.error(e); }
     ctx.restore();
   }
-  const fx = layer("effect");
-  if (fx && fx.visible && fx.glitch) applyGlitch(ctx, p, w, h, fx.glitchStr / 100);
+  const gl = S.layers.filter((l) => l.kind === "effect" && l.visible && l.glitch);
+  if (gl.length) applyGlitch(ctx, p, w, h, Math.max(...gl.map((l) => l.glitchStr)) / 100);
   ctx.restore();
 }
 
@@ -1048,7 +1049,9 @@ function dot(ctx, x, y, r) { ctx.beginPath(); ctx.arc(x, y, Math.max(1, r), 0, T
 
 /* ---------- Effects (all loop seamlessly: motion is periodic in p) ---------- */
 const partCache = new Map();
+let seedOff = 0; // per-layer offset so two layers of the same effect don't overlap exactly
 function parts(n, seed) {
+  seed += seedOff;
   const key = n + ":" + seed;
   if (!partCache.has(key)) { const r = mulberry(seed); partCache.set(key, Array.from({ length: n }, () => ({ a: r(), b: r(), c: r(), d: r(), e: r(), f: r() }))); }
   return partCache.get(key);
@@ -1064,8 +1067,9 @@ function drawEffect(ctx, L, p, w, h) {
   const c = fxCanvas.getContext("2d");
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h); c.globalAlpha = 1; c.globalCompositeOperation = "source-over"; c.shadowBlur = 0;
   const col = L.color === "auto" ? (EFFECT_DEFAULT_COLOR[L.style] || "#ffffff") : L.color;
-  const o = { col, dens: L.density / 50, size: L.size / 50, k: Math.max(1, Math.round(L.speed)) };
-  (FX[L.style] || (() => {}))(c, w, h, p, o);
+  const o = { col, auto: L.color === "auto", dens: L.density / 50, size: L.size / 50, k: Math.max(1, Math.round(L.speed)) };
+  seedOff = L.seed || 0;
+  try { (FX[L.style] || (() => {}))(c, w, h, p, o); } finally { seedOff = 0; }
   ctx.globalAlpha = L.opacity / 100;
   if (L.bright !== 100) ctx.filter = `brightness(${L.bright}%)`;
   ctx.drawImage(fxCanvas, 0, 0);
@@ -1090,7 +1094,7 @@ const FX = {
   cherry(c, w, h, p, o) { petals(c, w, h, p, o, 0.15, 1); },
   sakura(c, w, h, p, o) { petals(c, w, h, p, o, 1, 0.6); },
   fracture(c, w, h, p, o) {
-    const r = mulberry(91), cx = w * (0.3 + r() * 0.4), cy = h * (0.3 + r() * 0.4), fl = 0.5 + 0.5 * Math.abs(Math.sin(TAU * p * o.k * 2));
+    const r = mulberry(91 + seedOff), cx = w * (0.3 + r() * 0.4), cy = h * (0.3 + r() * 0.4), fl = 0.5 + 0.5 * Math.abs(Math.sin(TAU * p * o.k * 2));
     c.strokeStyle = rgba(o.col, 0.85 * fl); c.lineWidth = 1.2 * o.size; c.shadowColor = o.col; c.shadowBlur = 8;
     const branch = (x, y, ang, len, depth) => {
       if (depth > 4 || len < 8) return;
@@ -1314,7 +1318,7 @@ const FX = {
     for (const q of parts(N(90, o), 181)) {
       const v = 1 + Math.floor(q.c * 2), y = frac(q.b + p * o.k * v) * (h + 30) - 15, x = q.a * w + Math.sin(TAU * (p * o.k + q.d)) * 18;
       c.save(); c.translate(x, y); c.rotate(TAU * (p * o.k * v + q.e)); c.scale(1, Math.cos(TAU * (p * o.k * 2 + q.f)));
-      c.fillStyle = L_effectColorIsAuto ? cols[Math.floor(q.f * cols.length)] : o.col; c.fillRect(-4 * o.size, -2.5 * o.size, 8 * o.size, 5 * o.size); c.restore();
+      c.fillStyle = o.auto ? cols[Math.floor(q.f * cols.length)] : o.col; c.fillRect(-4 * o.size, -2.5 * o.size, 8 * o.size, 5 * o.size); c.restore();
     }
   },
   vhs(c, w, h, p, o) {
@@ -1326,7 +1330,7 @@ const FX = {
   },
   vignette(c, w, h, p, o) {
     const r = Math.hypot(w, h) / 2, s = 0.45 + 0.08 * Math.sin(TAU * p * o.k);
-    const g = c.createRadialGradient(w / 2, h / 2, r * s, w / 2, h / 2, r); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, L_effectColorIsAuto ? "rgba(0,0,0,0.85)" : rgba(o.col, 0.85));
+    const g = c.createRadialGradient(w / 2, h / 2, r * s, w / 2, h / 2, r); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, o.auto ? "rgba(0,0,0,0.85)" : rgba(o.col, 0.85));
     c.fillStyle = g; c.fillRect(0, 0, w, h);
   },
   grain(c, w, h, p, o) {
@@ -1350,7 +1354,6 @@ const FX = {
     }
   },
 };
-let L_effectColorIsAuto = true;
 function petals(c, w, h, p, o, wind, fall) {
   for (const q of parts(N(45, o), 201)) {
     const v = 1 + Math.floor(q.c * 2), t = frac(q.b + p * o.k * v);
@@ -1364,7 +1367,7 @@ function petals(c, w, h, p, o, wind, fall) {
 function rainCode(c, w, h, p, o, set) {
   const fs = Math.round(14 * o.size), cols = Math.ceil(w / fs);
   c.font = `${fs}px "Noto Sans JP", monospace`; c.textAlign = "center";
-  const r = mulberry(303);
+  const r = mulberry(303 + seedOff);
   for (let i = 0; i < cols; i++) {
     if (r() > o.dens * 0.8 + 0.1) { r(); r(); continue; }
     const v = 1 + Math.floor(r() * 2), len = 8 + Math.floor(r() * 18), head = frac(r() + p * o.k * v) * (h / fs + len);
@@ -1747,7 +1750,12 @@ function panelText() {
 }
 
 function ensureFrame() { let L = layer("frame"); if (!L) { L = makeFrame(); L.style = "none"; S.layers.push(L); } return L; }
-function ensureEffect() { let L = layer("effect"); if (!L) { L = makeEffect(); L.style = "none"; S.layers.push(L); } return L; }
+function effectList() { return S.layers.filter((l) => l.kind === "effect"); }
+function addEffectLayer(style = "particleFlow") {
+  const L = makeEffect(); L.style = style;
+  S.layers.push(L); S.sel = L.id; S.cat = "effect"; renderPanel();
+  return L;
+}
 function panelFrame() {
   const L = ensureFrame(); S.sel = "frame";
   panel.append(
@@ -1764,21 +1772,34 @@ function panelFrame() {
     el("p", { class: "note" }, "El marco se ajusta a cada parte del escaparate por separado (en Ilustración y Taller cada pieza tiene su propio marco)."));
 }
 function panelEffect() {
-  const L = ensureEffect(); S.sel = "effect";
+  let L = selLayer();
+  if (!L || L.kind !== "effect") L = effectList().pop();
+  if (!L) { L = makeEffect(); L.style = "none"; S.layers.push(L); }
+  S.sel = L.id;
   const paint = (cv, v) => {
     const x = cv.getContext("2d"); x.fillStyle = "#0b0d12"; x.fillRect(0, 0, 120, 90);
     if (v === "none") return;
     const col = EFFECT_DEFAULT_COLOR[v] || "#66c0f4";
-    try { (FX[v] || (() => {}))(x, 120, 90, 0.37, { col, dens: 0.6, size: 0.5, k: 1 }); } catch {}
+    try { (FX[v] || (() => {}))(x, 120, 90, 0.37, { col, auto: true, dens: 0.6, size: 0.5, k: 1 }); } catch {}
   };
+  const fxName = (e) => (EFFECTS.find((f) => f[0] === e.style)?.[1] || "") + (e.glitch ? " + Glitch" : "");
+  const list = el("div", { class: "chips" });
+  const renderList = () => {
+    list.innerHTML = "";
+    effectList().forEach((e) => list.append(el("button", { class: "chip" + (e === L ? " on" : ""), onclick: () => { S.sel = e.id; renderPanel(); } }, fxName(e))));
+    list.append(el("button", { class: "chip", onclick: () => addEffectLayer() }, "+ Agregar efecto"));
+  };
+  renderList();
   panel.append(
-    sec("Efectos", previewCards(EFFECTS, L, "style", paint, renderLayers)),
+    sec("Capas de efectos", list, el("p", { class: "note" }, "Puedes apilar varios efectos: cada uno es una capa con su propio color, opacidad y velocidad.")),
+    sec("Efectos", previewCards(EFFECTS, L, "style", paint, () => { renderList(); renderLayers(); })),
     sec("Configuración",
-      el("div", { class: "ctl" }, el("label", {}, "Color de efectos"), colorPick(L, "color", { auto: true, onchange: () => (L_effectColorIsAuto = L.color === "auto") })),
+      el("div", { class: "ctl" }, el("label", {}, "Color de efectos"), colorPick(L, "color", { auto: true })),
       range("Brillo", L, "bright", 20, 300, 1, null, "%"), range("Opacidad", L, "opacity", 0, 100, 1, null, "%"),
       range("Densidad", L, "density", 5, 150), range("Tamaño", L, "size", 10, 200), range("Velocidad (ciclos por bucle)", L, "speed", 1, 6),
-      el("button", { class: "btn small", onclick: () => { Object.assign(L, { color: "auto", bright: 100, opacity: 85, density: 50, size: 50, speed: 1 }); L_effectColorIsAuto = true; renderPanel(); } }, "Restablecer configuración de efectos")),
+      el("button", { class: "btn small", onclick: () => { Object.assign(L, { color: "auto", bright: 100, opacity: 85, density: 50, size: 50, speed: 1 }); renderPanel(); } }, "Restablecer configuración de efectos")),
     sec(`Glitch · ${L.glitch ? "Activado" : "Desactivado"}`, seg(L, "glitch", [[false, "No"], [true, "Sí"]], renderPanel), range("Intensidad", L, "glitchStr", 5, 100)),
+    el("button", { class: "btn danger", style: "width:100%", onclick: () => { S.layers = S.layers.filter((l) => l !== L); S.sel = effectList().pop()?.id || "bg"; renderPanel(); } }, "Eliminar efecto"),
   );
 }
 function panelExport() {
@@ -1835,7 +1856,7 @@ function renderLayers() {
 $("addChar").onclick = () => { S.cat = "char"; S.sel = null; renderPanel(); };
 $("addText").onclick = () => addTextLayer(tr("TEXTO"));
 $("addFrame").onclick = () => { const L = ensureFrame(); if (L.style === "none") L.style = "classic"; S.cat = "frame"; renderPanel(); };
-$("addEffect").onclick = () => { const L = ensureEffect(); if (L.style === "none") L.style = "particleFlow"; S.cat = "effect"; renderPanel(); };
+$("addEffect").onclick = () => addEffectLayer();
 $("cats").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; S.cat = b.dataset.cat; renderPanel(); };
 
 /* =====================================================================
@@ -1995,7 +2016,7 @@ $("projectFile").onchange = async () => {
       S.layers.push(L);
     }
     const bg = layer("bg"); if (bg?.media) S.bgAvg = avgColor(bg.media);
-    L_effectColorIsAuto = (layer("effect")?.color ?? "auto") === "auto";
+    uid = Math.max(uid, ...S.layers.map((l) => +(/-(\d+)$/.exec(l.id)?.[1] || 0) + 1));
     document.querySelectorAll("#typeTabs button").forEach((x) => x.classList.toggle("on", x.dataset.type === S.type));
     startT = performance.now(); renderToolbar(); renderPanel();
   } catch (e) { alert(tr("No se pudo abrir el proyecto:") + " " + e.message); }
@@ -2163,7 +2184,7 @@ renderToolbar();
 renderPanel();
 setLang(LANG);
 loop();
-window.__builder = { S, loadMedia, addCharFromFile, addTextLayer, setBgMedia, exportAll, encodeZones, renderAt, layer, ensureFrame, ensureEffect, renderPanel, FX, EFFECTS, TEXT_ANIMS, FRAMES, getLastFiles: () => lastFiles };
+window.__builder = { S, loadMedia, addCharFromFile, addTextLayer, setBgMedia, exportAll, encodeZones, renderAt, layer, ensureFrame, addEffectLayer, effectList, renderPanel, FX, EFFECTS, TEXT_ANIMS, FRAMES, getLastFiles: () => lastFiles };
 </script>
 </body>
 </html>
