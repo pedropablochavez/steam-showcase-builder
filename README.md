@@ -26,7 +26,7 @@ You choose the height (824 px by default).
 - **Characters (multiple):** remove the background three ways — quick (corner color), chroma key (also works on GIFs and video), or **AI that runs on your own PC** ([@imgly/background-removal](https://github.com/imgly/background-removal-js)). Scale, rotation, flip, 10 animations (breathing, wave, float, sway, pulse, shake, 3D spin, zoom, glitch…), light, glow, sticker, echo and shadow effects, "blend into background" and color correction.
 - **Text (multiple):** 38 fonts, horizontal / stacked / sideways orientation, gradient, outline, shadow and 26 animations (Glow, Tube Charge, Holo Foil, Chrome Neon, Embers, Molten Gold, Glitch, typewriter, letter wave…).
 - **Frames:** 18 styles (classic, neon, HUD, film, rainbow, glitch, thorns…), animated or static. Each piece of the showcase gets its own frame.
-- **Effects (multiple, stackable):** 40 seamlessly looping effects (Matrix, Sakura, Lightning, Pentagram, Hyperspace, snow, rain, sparks, VHS…) plus a global Glitch.
+- **Effects (multiple, stackable):** 40 seamlessly looping effects (Matrix, Sakura, Lightning, Pentagram, Hyperspace, snow, rain, sparks, VHS…) plus a global Glitch. Drag any effect in the preview to place it where you want and use the mouse wheel to resize it.
 - **Export:** loop duration, FPS and colors. If a GIF goes over the limit (5 MB by default) it is **optimized automatically**. Includes the hex trick, ZIP download and static PNG.
 - **GIF optimizer:** shrink any GIF (colors, scale, frame skipping) or let auto mode bring it under the limit.
 - **Hex patcher:** changes the last byte of your GIFs from `0x3B` to `0x21`.

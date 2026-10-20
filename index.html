@@ -394,6 +394,8 @@ const EN = {
   "Margen interior": "Inner margin", "Velocidad": "Speed", "Restablecer configuración del marco": "Reset frame settings",
   "El marco se ajusta a cada parte del escaparate por separado (en Ilustración y Taller cada pieza tiene su propio marco).": "The frame fits each part of the showcase separately (in Artwork and Workshop every piece gets its own frame).",
   "Efectos": "Effects", "Color de efectos": "Effects color", "Densidad": "Density", "Tamaño": "Size", "Restablecer configuración de efectos": "Reset effects settings",
+  "X (desde el centro)": "X (from center)", "Y (desde el centro)": "Y (from center)", "Centrar": "Center",
+  "Arrastra el efecto en la vista previa para moverlo y usa la rueda del mouse para cambiar su tamaño. En efectos de pantalla completa (nieve, lluvia…) se desplaza el patrón.": "Drag the effect in the preview to move it and use the mouse wheel to resize it. For full-screen effects (snow, rain…) the pattern shifts.",
   "Activado": "On", "Desactivado": "Off", "Capas de efectos": "Effect layers", "+ Agregar efecto": "+ Add effect", "Eliminar efecto": "Delete effect",
   "Puedes apilar varios efectos: cada uno es una capa con su propio color, opacidad y velocidad.": "You can stack several effects: each one is a layer with its own color, opacity and speed.",
   // export panel
@@ -597,7 +599,7 @@ function makeText(text = "TEXTO") {
     anim: "none", animStr: 60, animSpeed: 1 };
 }
 function makeFrame() { return { id: "frame", kind: "frame", name: "Marco", visible: true, style: "classic", animated: false, color: "#ffffff", opacity: 100, contour: 60, width: 4, inset: 0, speed: 1 }; }
-function makeEffect() { return { id: newId("effect"), kind: "effect", seed: Math.floor(Math.random() * 1000), name: "Efecto", visible: true, style: "particleFlow", color: "auto", bright: 100, opacity: 85, density: 50, size: 50, speed: 1, glitch: false, glitchStr: 50 }; }
+function makeEffect() { return { id: newId("effect"), kind: "effect", seed: Math.floor(Math.random() * 1000), x: 0, y: 0, name: "Efecto", visible: true, style: "particleFlow", color: "auto", bright: 100, opacity: 85, density: 50, size: 50, speed: 1, glitch: false, glitchStr: 50 }; }
 S.layers.push(makeBg());
 
 const T = () => TYPES[S.type];
@@ -1067,14 +1069,23 @@ function drawEffect(ctx, L, p, w, h) {
   const c = fxCanvas.getContext("2d");
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h); c.globalAlpha = 1; c.globalCompositeOperation = "source-over"; c.shadowBlur = 0;
   const col = L.color === "auto" ? (EFFECT_DEFAULT_COLOR[L.style] || "#ffffff") : L.color;
-  const o = { col, auto: L.color === "auto", dens: L.density / 50, size: L.size / 50, k: Math.max(1, Math.round(L.speed)) };
+  const centered = CENTERED_FX.has(L.style), dx = L.x || 0, dy = L.y || 0;
+  const o = { col, auto: L.color === "auto", dens: L.density / 50, size: L.size / 50, k: Math.max(1, Math.round(L.speed)),
+    cx: w / 2 + (centered ? dx : 0), cy: h / 2 + (centered ? dy : 0) };
   seedOff = L.seed || 0;
   try { (FX[L.style] || (() => {}))(c, w, h, p, o); } finally { seedOff = 0; }
   ctx.globalAlpha = L.opacity / 100;
   if (L.bright !== 100) ctx.filter = `brightness(${L.bright}%)`;
-  ctx.drawImage(fxCanvas, 0, 0);
+  if (centered || (!dx && !dy)) ctx.drawImage(fxCanvas, 0, 0);
+  else {
+    // full-screen effects: shift the pattern and wrap it around so no empty strip appears
+    const ox = ((dx % w) + w) % w, oy = ((dy % h) + h) % h;
+    for (const tx of [ox - w, ox]) for (const ty of [oy - h, oy]) ctx.drawImage(fxCanvas, tx, ty);
+  }
 }
 const N = (base, o) => Math.max(1, Math.round(base * o.dens));
+// effects drawn around a center point (o.cx, o.cy) that the user can drag
+const CENTERED_FX = new Set(["aura", "fracture", "lightning", "burst", "pentagram", "eqRings", "starfield", "critical", "arcane", "hud", "hyperspace", "dotWave", "vignette"]);
 const FX = {
   particleFlow(c, w, h, p, o) {
     for (const q of parts(N(90, o), 11)) {
@@ -1086,7 +1097,7 @@ const FX = {
   aura(c, w, h, p, o) {
     c.globalCompositeOperation = "lighter";
     for (let i = 0; i < 3; i++) {
-      const ph = TAU * (p * o.k + i / 3), x = w * (0.5 + 0.25 * Math.sin(ph)), y = h * (0.75 + 0.1 * Math.cos(ph)), r = Math.max(w, h) * (0.45 + 0.1 * Math.sin(ph * 2)) * o.size;
+      const ph = TAU * (p * o.k + i / 3), x = o.cx + w * 0.25 * Math.sin(ph), y = o.cy + h * (0.25 + 0.1 * Math.cos(ph)), r = Math.max(w, h) * (0.45 + 0.1 * Math.sin(ph * 2)) * o.size;
       const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, rgba(o.col, 0.45)); g.addColorStop(1, rgba(o.col, 0));
       c.fillStyle = g; c.fillRect(0, 0, w, h);
     }
@@ -1094,7 +1105,7 @@ const FX = {
   cherry(c, w, h, p, o) { petals(c, w, h, p, o, 0.15, 1); },
   sakura(c, w, h, p, o) { petals(c, w, h, p, o, 1, 0.6); },
   fracture(c, w, h, p, o) {
-    const r = mulberry(91 + seedOff), cx = w * (0.3 + r() * 0.4), cy = h * (0.3 + r() * 0.4), fl = 0.5 + 0.5 * Math.abs(Math.sin(TAU * p * o.k * 2));
+    const r = mulberry(91 + seedOff), cx = o.cx + w * (r() - 0.5) * 0.4, cy = o.cy + h * (r() - 0.5) * 0.4, fl = 0.5 + 0.5 * Math.abs(Math.sin(TAU * p * o.k * 2));
     c.strokeStyle = rgba(o.col, 0.85 * fl); c.lineWidth = 1.2 * o.size; c.shadowColor = o.col; c.shadowBlur = 8;
     const branch = (x, y, ang, len, depth) => {
       if (depth > 4 || len < 8) return;
@@ -1157,7 +1168,7 @@ const FX = {
       for (let s = 0; s < 12; s++) { x += Math.sin(ang) * len / 12 + (r() - 0.5) * 30; y += Math.cos(ang) * len / 12; c.lineTo(x, y); if (depth < 2 && r() < 0.12) { c.stroke(); bolt(x, y, ang + (r() - 0.5), len * 0.4, depth + 1); c.beginPath(); c.moveTo(x, y); } }
       c.stroke();
     };
-    bolt(w * (0.2 + r() * 0.6), -10, (r() - 0.5) * 0.4, h * 1.1, 0);
+    bolt(o.cx + w * (r() - 0.5) * 0.6, o.cy - h / 2 - 10, (r() - 0.5) * 0.4, h * 1.1, 0);
   },
   matrix(c, w, h, p, o) { rainCode(c, w, h, p, o, "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789"); },
   datafall(c, w, h, p, o) { rainCode(c, w, h, p, o, "01"); },
@@ -1168,14 +1179,14 @@ const FX = {
     }
   },
   burst(c, w, h, p, o) {
-    const cx = w / 2, cy = h / 2, R = Math.hypot(w, h) * 0.6;
+    const cx = o.cx, cy = o.cy, R = Math.hypot(w, h) * 0.6;
     for (const q of parts(N(90, o), 61)) {
       const t = frac(p * o.k + q.a), ang = q.b * TAU, r = t * R;
       glowDot(c, cx + Math.cos(ang) * r, cy + Math.sin(ang) * r, (2 + q.c * 5) * o.size * (0.5 + t), o.col, 1 - t);
     }
   },
   pentagram(c, w, h, p, o) {
-    const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.38 * o.size, a0 = TAU * p * o.k / 5;
+    const cx = o.cx, cy = o.cy, R = Math.min(w, h) * 0.38 * o.size, a0 = TAU * p * o.k / 5;
     c.strokeStyle = o.col; c.shadowColor = o.col; c.shadowBlur = 16 * (0.6 + 0.4 * Math.sin(TAU * p * o.k)); c.lineWidth = 2.5;
     c.beginPath(); c.arc(cx, cy, R * 1.08, 0, TAU); c.stroke(); c.beginPath(); c.arc(cx, cy, R * 1.18, 0, TAU); c.stroke();
     c.beginPath(); for (let i = 0; i <= 5; i++) { const an = a0 - Math.PI / 2 + i * 2 * TAU / 5; c[i ? "lineTo" : "moveTo"](cx + Math.cos(an) * R, cy + Math.sin(an) * R); } c.stroke();
@@ -1197,7 +1208,7 @@ const FX = {
     }
   },
   eqRings(c, w, h, p, o) {
-    const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.22 * o.size, n = 64;
+    const cx = o.cx, cy = o.cy, R = Math.min(w, h) * 0.22 * o.size, n = 64;
     c.strokeStyle = o.col; c.shadowColor = o.col; c.shadowBlur = 10; c.lineWidth = 3;
     for (let i = 0; i < n; i++) {
       const an = i / n * TAU, l = (0.2 + 0.8 * Math.abs(Math.sin(TAU * p * o.k * 2 + i * 0.7) * Math.cos(TAU * p * o.k + i * 0.23))) * R * 0.6;
@@ -1233,7 +1244,7 @@ const FX = {
     }
   },
   starfield(c, w, h, p, o) {
-    const cx = w / 2, cy = h / 2, R = Math.hypot(w, h) * 0.6;
+    const cx = o.cx, cy = o.cy, R = Math.hypot(w, h) * 0.6;
     for (const q of parts(N(160, o), 121)) {
       const z = frac(q.a + p * o.k), ang = q.b * TAU, r = z * z * R;
       c.fillStyle = rgba(o.col, Math.min(1, z * 1.5)); dot(c, cx + Math.cos(ang) * r, cy + Math.sin(ang) * r, (0.4 + z * 2.2) * o.size);
@@ -1244,11 +1255,11 @@ const FX = {
     for (let i = 0; i < N(14, o); i++) { c.fillStyle = r() < 0.5 ? rgba(o.col, 0.5) : `rgba(255,255,255,${0.15 + r() * 0.3})`; c.fillRect(r() * w, r() * h, 20 + r() * w * 0.4, 2 + r() * 14); }
     if (frac(p * o.k * 2) < 0.5) {
       c.font = `${Math.round(Math.min(w, 630) * 0.07)}px "Press Start 2P", monospace`; c.textAlign = "center"; c.fillStyle = o.col; c.shadowColor = o.col; c.shadowBlur = 14;
-      c.fillText("CRITICAL ERROR", w / 2 + (r() - 0.5) * 8, h * 0.5);
+      c.fillText("CRITICAL ERROR", o.cx + (r() - 0.5) * 8, o.cy);
     }
   },
   arcane(c, w, h, p, o) {
-    const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.4 * o.size;
+    const cx = o.cx, cy = o.cy, R = Math.min(w, h) * 0.4 * o.size;
     c.strokeStyle = o.col; c.fillStyle = o.col; c.shadowColor = o.col; c.shadowBlur = 12; c.lineWidth = 1.5;
     c.save(); c.translate(cx, cy); c.rotate(TAU * p * o.k / 4);
     c.beginPath(); c.arc(0, 0, R, 0, TAU); c.stroke(); c.beginPath(); c.arc(0, 0, R * 0.86, 0, TAU); c.stroke();
@@ -1273,7 +1284,7 @@ const FX = {
     }
   },
   hud(c, w, h, p, o) {
-    const cx = w / 2, cy = h * 0.45, R = Math.min(w, h) * 0.25 * o.size;
+    const cx = o.cx, cy = o.cy - h * 0.05, R = Math.min(w, h) * 0.25 * o.size;
     c.strokeStyle = o.col; c.fillStyle = o.col; c.lineWidth = 1.5; c.shadowColor = o.col; c.shadowBlur = 6;
     c.save(); c.translate(cx, cy);
     c.rotate(TAU * p * o.k / 3); c.setLineDash([R * 0.3, R * 0.15]); c.beginPath(); c.arc(0, 0, R, 0, TAU); c.stroke();
@@ -1284,7 +1295,7 @@ const FX = {
     c.fillText(`LOCK ${frac(p * o.k * 2) < 0.5 ? "■" : "□"}`, cx + R * 0.5, cy + R * 1.2);
   },
   hyperspace(c, w, h, p, o) {
-    const cx = w / 2, cy = h / 2, R = Math.hypot(w, h) * 0.6;
+    const cx = o.cx, cy = o.cy, R = Math.hypot(w, h) * 0.6;
     c.lineCap = "round";
     for (const q of parts(N(110, o), 151)) {
       const z = frac(q.a + p * o.k), ang = q.b * TAU, r1 = z * z * R, r0 = Math.max(0, r1 - (20 + z * 120) * o.size);
@@ -1295,7 +1306,7 @@ const FX = {
   dotWave(c, w, h, p, o) {
     const s = 18 * o.size;
     for (let y = s / 2; y < h; y += s) for (let x = s / 2; x < w; x += s) {
-      const d = Math.hypot(x - w / 2, y - h); const v = 0.5 + 0.5 * Math.sin(TAU * p * o.k * 2 - d * 0.03);
+      const d = Math.hypot(x - o.cx, y - (o.cy + h / 2)); const v = 0.5 + 0.5 * Math.sin(TAU * p * o.k * 2 - d * 0.03);
       c.fillStyle = rgba(o.col, 0.15 + v * 0.6); dot(c, x, y, 0.8 + v * s * 0.22);
     }
   },
@@ -1330,7 +1341,7 @@ const FX = {
   },
   vignette(c, w, h, p, o) {
     const r = Math.hypot(w, h) / 2, s = 0.45 + 0.08 * Math.sin(TAU * p * o.k);
-    const g = c.createRadialGradient(w / 2, h / 2, r * s, w / 2, h / 2, r); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, o.auto ? "rgba(0,0,0,0.85)" : rgba(o.col, 0.85));
+    const g = c.createRadialGradient(o.cx, o.cy, r * s, o.cx, o.cy, r); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, o.auto ? "rgba(0,0,0,0.85)" : rgba(o.col, 0.85));
     c.fillStyle = g; c.fillRect(0, 0, w, h);
   },
   grain(c, w, h, p, o) {
@@ -1437,6 +1448,11 @@ function drawPreview() {
     vctx.setLineDash([]);
     const L = selLayer();
     if (L && (L.kind === "char" || L.kind === "text")) { vctx.fillStyle = "rgba(102,192,244,.9)"; vctx.beginPath(); vctx.arc(L.x, L.y, 4, 0, TAU); vctx.fill(); }
+    if (L && L.kind === "effect" && CENTERED_FX.has(L.style)) {
+      const ex = w / 2 + (L.x || 0), ey = h / 2 + (L.y || 0);
+      vctx.strokeStyle = "rgba(102,192,244,.9)"; vctx.lineWidth = 1.5;
+      vctx.beginPath(); vctx.moveTo(ex - 10, ey); vctx.lineTo(ex + 10, ey); vctx.moveTo(ex, ey - 10); vctx.lineTo(ex, ey + 10); vctx.stroke();
+    }
   }
 }
 function loop() { drawPreview(); requestAnimationFrame(loop); }
@@ -1449,7 +1465,9 @@ function toComp(e) {
   return [(e.clientX - r.left) * sx - pad, (e.clientY - r.top) * sy - pad - head, sx];
 }
 view.addEventListener("pointerdown", (e) => {
-  const L = selLayer(); if (!L || !("x" in L)) return;
+  const L = selLayer();
+  if (L?.kind === "effect") { L.x ??= 0; L.y ??= 0; }
+  if (!L || !("x" in L)) return;
   view.setPointerCapture(e.pointerId);
   const [x, y] = toComp(e);
   drag = { x, y, ox: L.x, oy: L.y };
@@ -1470,6 +1488,7 @@ view.addEventListener("wheel", (e) => {
     L.x = Math.round(x - (x - L.x) * f); L.y = Math.round(y - (y - L.y) * f); L.zoom = +(L.zoom * f).toFixed(4);
   } else if (L.kind === "char") L.scale = +clamp(L.scale * f, 0.02, 10).toFixed(4);
   else if (L.kind === "text") L.size = Math.round(clamp(L.size * f, 6, 600));
+  else if (L.kind === "effect") L.size = Math.round(clamp(L.size * f, 10, 300));
   else return;
   syncPanelInputs();
 }, { passive: false });
@@ -1776,11 +1795,12 @@ function panelEffect() {
   if (!L || L.kind !== "effect") L = effectList().pop();
   if (!L) { L = makeEffect(); L.style = "none"; S.layers.push(L); }
   S.sel = L.id;
+  L.x ??= 0; L.y ??= 0;
   const paint = (cv, v) => {
     const x = cv.getContext("2d"); x.fillStyle = "#0b0d12"; x.fillRect(0, 0, 120, 90);
     if (v === "none") return;
     const col = EFFECT_DEFAULT_COLOR[v] || "#66c0f4";
-    try { (FX[v] || (() => {}))(x, 120, 90, 0.37, { col, auto: true, dens: 0.6, size: 0.5, k: 1 }); } catch {}
+    try { (FX[v] || (() => {}))(x, 120, 90, 0.37, { col, auto: true, dens: 0.6, size: 0.5, k: 1, cx: 60, cy: 45 }); } catch {}
   };
   const fxName = (e) => (EFFECTS.find((f) => f[0] === e.style)?.[1] || "") + (e.glitch ? " + Glitch" : "");
   const list = el("div", { class: "chips" });
@@ -1793,10 +1813,14 @@ function panelEffect() {
   panel.append(
     sec("Capas de efectos", list, el("p", { class: "note" }, "Puedes apilar varios efectos: cada uno es una capa con su propio color, opacidad y velocidad.")),
     sec("Efectos", previewCards(EFFECTS, L, "style", paint, () => { renderList(); renderLayers(); })),
+    sec("Posición",
+      el("div", { class: "row" }, num("X (desde el centro)", L, "x"), num("Y (desde el centro)", L, "y")),
+      el("button", { class: "btn small", onclick: () => { L.x = 0; L.y = 0; syncPanelInputs(); } }, "Centrar"),
+      el("p", { class: "note" }, "Arrastra el efecto en la vista previa para moverlo y usa la rueda del mouse para cambiar su tamaño. En efectos de pantalla completa (nieve, lluvia…) se desplaza el patrón.")),
     sec("Configuración",
       el("div", { class: "ctl" }, el("label", {}, "Color de efectos"), colorPick(L, "color", { auto: true })),
       range("Brillo", L, "bright", 20, 300, 1, null, "%"), range("Opacidad", L, "opacity", 0, 100, 1, null, "%"),
-      range("Densidad", L, "density", 5, 150), range("Tamaño", L, "size", 10, 200), range("Velocidad (ciclos por bucle)", L, "speed", 1, 6),
+      range("Densidad", L, "density", 5, 150), range("Tamaño", L, "size", 10, 300), range("Velocidad (ciclos por bucle)", L, "speed", 1, 6),
       el("button", { class: "btn small", onclick: () => { Object.assign(L, { color: "auto", bright: 100, opacity: 85, density: 50, size: 50, speed: 1 }); renderPanel(); } }, "Restablecer configuración de efectos")),
     sec(`Glitch · ${L.glitch ? "Activado" : "Desactivado"}`, seg(L, "glitch", [[false, "No"], [true, "Sí"]], renderPanel), range("Intensidad", L, "glitchStr", 5, 100)),
     el("button", { class: "btn danger", style: "width:100%", onclick: () => { S.layers = S.layers.filter((l) => l !== L); S.sel = effectList().pop()?.id || "bg"; renderPanel(); } }, "Eliminar efecto"),
@@ -1870,7 +1894,7 @@ function renderToolbar() {
     hv.oninput = () => { S.height = clamp(+hv.value || 824, 50, 4000); updateDim(); };
     const bg = layer("bg");
     tb.append(el("div", { class: "ctl" }, "Alto", hv, "px"),
-      bg.media ? el("button", { class: "btn small", onclick: () => { S.height = Math.round(bg.media.h * bg.zoom); hv.value = S.height; updateDim(); } }, "Alto = fondo") : null);
+      bg.media ? el("button", { class: "btn small", onclick: () => { S.height = Math.round(bg.media.h * bg.zoom); hv.value = S.height; updateDim(); } }, "Alto = fondo") : "");
   }
   if (S.type === "adaptive") {
     const mv = el("input", { type: "number", value: S.adaptiveMax, min: 100, max: 4000 });
