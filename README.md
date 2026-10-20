@@ -1,71 +1,73 @@
 # Steam Showcase Builder
 
-Herramienta gratuita para crear **escaparates animados para tu perfil de Steam** (GIFs divididos que calzan perfecto entre sí), directamente en el navegador. Sin cuentas, sin tokens, sin marcas de agua y sin subir tus archivos a ningún servidor.
+A free tool for creating **animated showcases for your Steam profile** (split GIFs that line up perfectly with each other), right in your browser. No account, no tokens, no watermarks, and your files are never uploaded to any server.
 
-## ¿Para qué sirve?
+## What is it for?
 
-En Steam, los escaparates de ilustraciones y de Workshop muestran **varias imágenes separadas una al lado de la otra**. Si quieres que se vean como una sola imagen continua, cada pieza tiene que tener el ancho exacto y hay que descartar el espacio que Steam deja entre ellas. Si no, la parte chica queda "corrida" y no calza con la grande.
+On Steam, the Artwork and Workshop showcases display **several separate images side by side**. If you want them to look like one continuous image, each piece has to be the exact width and the gap Steam leaves between them has to be cut out. Otherwise the narrow strip ends up "shifted" and doesn't line up with the big one.
 
-Esta herramienta arma todo en un solo lienzo, le agregas capas (fondo, personaje, textos, marco, efectos) y al exportar lo corta automáticamente en los GIFs que Steam necesita, ya alineados.
+This tool lets you build everything on a single canvas, add layers (background, character, text, frame, effects), and when you export it automatically cuts it into the GIFs Steam needs, already aligned.
 
-## Tipos de escaparate
+## Showcase types
 
-| Pestaña      | Archivos que genera           | Medidas                                   |
-|--------------|-------------------------------|-------------------------------------------|
-| Destacado    | 1 GIF                         | 630 px de ancho                           |
-| Ilustración  | 2 GIFs (grande + tira)        | 506 px + 100 px (con 9 px ocultos entre medio) |
-| Taller       | 5 GIFs (Workshop)             | 5 × 122 px (con 4 px ocultos entre cada uno)   |
-| Adaptable    | 1 GIF                         | 630 px, el alto se ajusta al fondo        |
-| Avatar       | 1 imagen                      | 512 × 512 px                              |
+| Tab          | Files it generates             | Size                                         |
+|--------------|--------------------------------|----------------------------------------------|
+| Destacado (Featured)   | 1 GIF                | 630 px wide                                  |
+| Ilustración (Artwork)  | 2 GIFs (main + strip)| 506 px + 100 px (9 px hidden gap in between) |
+| Taller (Workshop)      | 5 GIFs               | 5 × 122 px (4 px hidden gap between each)    |
+| Adaptable              | 1 GIF                | 630 px, height follows the background        |
+| Avatar                 | 1 image              | 512 × 512 px                                 |
 
-El alto lo eliges tú (por defecto 824 px).
+You choose the height (824 px by default).
 
-## Funciones
+## Features
 
-- **Fondo:** imagen, GIF animado, WebP o video (MP4/WEBM). Ajustes de cubrir/ajustar, y **"Alinear con perfil"**: escala un fondo de perfil de 1920 px y lo recorta en la posición exacta del escaparate para que se funda con tu fondo de Steam. Brillo, contraste, saturación, tono y desenfoque.
-- **Personajes (varios):** quitar fondo de tres formas — rápido (color de las esquinas), clave de color (chroma key, también para GIF y video) o **IA que corre en tu propio PC** ([@imgly/background-removal](https://github.com/imgly/background-removal-js)). Escala, rotación, voltear, 10 animaciones (respiración, ola, flotar, balanceo, latido, temblor, giro 3D, zoom, glitch…), efectos de luz, resplandor, pegatina, eco y sombra, "integrar en el fondo" y corrección de color.
-- **Textos (varios):** 38 fuentes, orientación horizontal / apilada / de lado, degradado, borde, sombra y 26 animaciones (Glow, Tube Charge, Holo Foil, Chrome Neon, Embers, Molten Gold, Glitch, máquina de escribir, ola de letras…).
-- **Marcos:** 18 estilos (clásico, neón, HUD, película, arcoíris, glitch, espinas…), animados o estáticos. Cada pieza del escaparate lleva su propio marco.
-- **Efectos:** 40 efectos en bucle perfecto (Matrix, Sakura, Lightning, Pentagram, Hyperspace, nieve, lluvia, chispas, VHS…) más un Glitch general.
-- **Exportar:** duración del bucle, FPS y colores. Si un GIF pasa del límite (5 MB por defecto) se **optimiza solo**. Incluye el truco hex, descarga en ZIP y PNG estático.
-- **Optimizador de GIF:** baja el peso de cualquier GIF (colores, escala, saltar cuadros) o en modo automático hasta el límite.
-- **Hex patcher:** cambia el último byte de tus GIFs de `0x3B` a `0x21`.
-- **Mockup de perfil**, **guardar/abrir proyecto** (.json) y una **guía paso a paso** para subirlo a Steam con los comandos de consola.
+- **Background:** image, animated GIF, WebP or video (MP4/WEBM). Cover/fit options, plus **"Align with profile"**: scales a 1920 px profile background and crops it at the exact position of the showcase so it blends into your Steam background. Brightness, contrast, saturation, hue and blur.
+- **Characters (multiple):** remove the background three ways — quick (corner color), chroma key (also works on GIFs and video), or **AI that runs on your own PC** ([@imgly/background-removal](https://github.com/imgly/background-removal-js)). Scale, rotation, flip, 10 animations (breathing, wave, float, sway, pulse, shake, 3D spin, zoom, glitch…), light, glow, sticker, echo and shadow effects, "blend into background" and color correction.
+- **Text (multiple):** 38 fonts, horizontal / stacked / sideways orientation, gradient, outline, shadow and 26 animations (Glow, Tube Charge, Holo Foil, Chrome Neon, Embers, Molten Gold, Glitch, typewriter, letter wave…).
+- **Frames:** 18 styles (classic, neon, HUD, film, rainbow, glitch, thorns…), animated or static. Each piece of the showcase gets its own frame.
+- **Effects:** 40 seamlessly looping effects (Matrix, Sakura, Lightning, Pentagram, Hyperspace, snow, rain, sparks, VHS…) plus a global Glitch.
+- **Export:** loop duration, FPS and colors. If a GIF goes over the limit (5 MB by default) it is **optimized automatically**. Includes the hex trick, ZIP download and static PNG.
+- **GIF optimizer:** shrink any GIF (colors, scale, frame skipping) or let auto mode bring it under the limit.
+- **Hex patcher:** changes the last byte of your GIFs from `0x3B` to `0x21`.
+- **Profile mockup**, **save/open project** (.json) and a **step-by-step guide** for uploading to Steam with the console commands.
 
-## Cómo usarlo
+> The interface is in Spanish.
 
-1. Abre `index.html` en Chrome, Brave o Edge (doble clic). Necesita internet solo para cargar fuentes y librerías.
-2. Elige el tipo de escaparate arriba (por ejemplo **Ilustración**).
-3. Agrega fondo, personaje, textos, marco y efectos desde el panel izquierdo. Arrastra en la vista previa para mover la capa seleccionada y usa la rueda del mouse para escalarla.
-4. Pulsa **Descargar GIFs**.
-5. Sigue la pestaña **Cómo subirlo**.
+## How to use it
 
-## Subirlo a Steam (resumen)
+1. Open `index.html` in Chrome, Brave or Edge (double-click). It only needs internet to load fonts and libraries.
+2. Pick the showcase type at the top (for example **Ilustración**).
+3. Add a background, character, text, frame and effects from the left panel. Drag in the preview to move the selected layer and use the mouse wheel to scale it.
+4. Click **Descargar GIFs** (Download GIFs).
+5. Follow the **Cómo subirlo** (How to upload) tab.
 
-1. Ve a <https://steamcommunity.com/sharedfiles/edititem/767/3/> (subir material gráfico).
-2. Elige el archivo y pega en el título el carácter invisible `⠀` (U+2800) para que no aparezca texto debajo.
-3. Abre la consola (F12 → Console), pega el comando y presiona Enter:
-   - Ilustración / Destacado:
+## Uploading to Steam (summary)
+
+1. Go to <https://steamcommunity.com/sharedfiles/edititem/767/3/> (upload artwork).
+2. Choose the file and paste the invisible character `⠀` (U+2800) in the title so no text shows under the showcase.
+3. Open the console (F12 → Console), paste the command and press Enter:
+   - Artwork / Featured:
      ```js
      $J('#image_width').val(1000).attr('id',''),$J('#image_height').val(1).attr('id','');
      ```
-   - Capturas:
+   - Screenshots:
      ```js
      $J('#image_width').val(1000).attr('id',''),$J('#image_height').val(1).attr('id','');$J('[name=file_type]').val(5);
      ```
-   - Workshop (sube las 5 partes en orden):
+   - Workshop (upload the 5 parts in order):
      ```js
      $J('[name=consumer_app_id]').val(480);$J('[name=file_type]').val(0);$J('[name=visibility]').val(0);
      ```
-4. Marca la casilla de autoría, guarda y repite con cada parte.
-5. **Modificar perfil → Escaparates** y elige las obras en cada espacio.
+4. Tick the authorship checkbox, save, and repeat for each part.
+5. **Edit Profile → Featured Showcase** and pick the artwork for each slot.
 
-> Los escaparates se desbloquean desde el nivel 10 de Steam (uno más cada 10 niveles). Los comandos de consola y el truco hex son trucos de la comunidad, no funciones oficiales de Steam, así que podrían dejar de funcionar si Steam cambia algo.
+> Showcases unlock at Steam level 10 (one more every 10 levels). The console commands and the hex trick are community tricks, not official Steam features, so they may stop working if Steam changes something.
 
-## Tecnología
+## Tech
 
-Un solo archivo HTML con JavaScript puro. Usa [gifenc](https://github.com/mattdesl/gifenc) para crear los GIFs, [fflate](https://github.com/101arrowz/fflate) para el ZIP, `ImageDecoder` del navegador para leer GIFs animados y Google Fonts para las fuentes.
+A single HTML file with plain JavaScript. It uses [gifenc](https://github.com/mattdesl/gifenc) to create the GIFs, [fflate](https://github.com/101arrowz/fflate) for the ZIP, the browser's `ImageDecoder` to read animated GIFs, and Google Fonts for the fonts.
 
 ---
 
-No está afiliado a Valve ni a Steam.
+Not affiliated with Valve or Steam.
