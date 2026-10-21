@@ -286,7 +286,9 @@ const EFFECTS = [["none", "Ninguno"], ["particleFlow", "Particle Flow"], ["aura"
   ["invPentagram", "Inverted Pentagram"], ["invertedCross", "Inverted Cross"], ["num666", "666"], ["candles", "Ritual Candles"],
   ["portal", "Hell Portal"], ["hellfire", "Hellfire"], ["bloodDrip", "Blood Drip"], ["bloodSplatter", "Blood Splatter"],
   // horror / jumpscare
-  ["jumpscare", "Jumpscare"], ["demonEyes", "Demon Eyes"], ["creepyEye", "Creepy Eye"], ["shadowFigure", "Shadow Figure"],
+  ["jumpscare", "Jumpscare"], ["lightsOut", "Lights Out"], ["longHair", "Long Hair Girl"], ["grin", "The Grin"], ["subliminal", "Subliminal"],
+  ["staticFace", "Static Face"], ["crawler", "The Crawler"], ["hands", "Hands"], ["eyesAll", "Eyes Everywhere"], ["doll", "Cursed Doll"],
+  ["demonEyes", "Demon Eyes"], ["creepyEye", "Creepy Eye"], ["shadowFigure", "Shadow Figure"],
   ["spiders", "Spiders"], ["bats", "Bats"], ["ghosts", "Ghosts"], ["heartbeat", "Heartbeat"], ["creepyText", "Creepy Text"], ["tvStatic", "TV Static"],
   // memes / troll
   ["skullRain", "Skull Rain 💀"], ["emojiRain", "Emoji Rain"], ["mlg", "MLG"], ["dealWithIt", "Deal With It"], ["bounceText", "Bouncing Text"],
@@ -299,7 +301,8 @@ const FX_CATS = [["all", "Todos"], ["particles", "Partículas"], ["occult", "Ocu
 const FX_CAT = {
   pentagram: "occult", invPentagram: "occult", arcane: "occult", invertedCross: "occult", num666: "occult", candles: "occult", portal: "occult",
   hellfire: "occult", bloodDrip: "occult", glyphs: "occult",
-  jumpscare: "horror", demonEyes: "horror", creepyEye: "horror", shadowFigure: "horror", spiders: "horror", bats: "horror", ghosts: "horror",
+  jumpscare: "horror", lightsOut: "horror", longHair: "horror", grin: "horror", subliminal: "horror", staticFace: "horror", crawler: "horror",
+  hands: "horror", eyesAll: "horror", doll: "horror", demonEyes: "horror", creepyEye: "horror", shadowFigure: "horror", spiders: "horror", bats: "horror", ghosts: "horror",
   heartbeat: "horror", creepyText: "horror", tvStatic: "horror", critical: "horror", fracture: "horror", bloodSplatter: "horror", lightning: "horror",
   skullRain: "meme", emojiRain: "meme", mlg: "meme", dealWithIt: "meme", bounceText: "meme", boom: "meme", censored: "meme", errorPopups: "meme",
   loading: "meme", speedLines: "meme", wasted: "meme", tbc: "meme", deepFried: "meme", bassBoost: "meme", rgbGamer: "meme", hearts: "meme", confetti: "meme",
@@ -314,7 +317,8 @@ const EFFECT_DEFAULT_COLOR = { cherry: "#ffb7d5", sakura: "#ffc4dd", fireflies: 
   invPentagram: "#ff1a1a", invertedCross: "#ff1a1a", num666: "#ff1a1a", candles: "#ff9a2a", portal: "#c0101a", bloodDrip: "#8a0000",
   bloodSplatter: "#7a0000", jumpscare: "#ff0000", demonEyes: "#ff1a1a", creepyEye: "#8a1010", shadowFigure: "#050505", spiders: "#1c1c1c",
   bats: "#2a1530", ghosts: "#e8f0ff", heartbeat: "#b00010", creepyText: "#d01020", boom: "#ffffff", wasted: "#c8102e", lensFlare: "#ffe9b0",
-  loading: "#ffffff", bounceText: "#ffffff", mlg: "#ffffff", speedLines: "#ffffff" };
+  loading: "#ffffff", bounceText: "#ffffff", mlg: "#ffffff", speedLines: "#ffffff",
+  lightsOut: "#ff0000", staticFace: "#ff0000", hands: "#ff0000", subliminal: "#ff0000", eyesAll: "#5a1010" };
 
 /* =====================================================================
    Utils
@@ -1129,7 +1133,7 @@ const N = (base, o) => Math.max(1, Math.round(base * o.dens));
 // effects drawn around a center point (o.cx, o.cy) that the user can drag
 const CENTERED_FX = new Set(["aura", "fracture", "lightning", "burst", "pentagram", "eqRings", "starfield", "critical", "arcane", "hud", "hyperspace", "dotWave", "vignette",
   "invPentagram", "invertedCross", "num666", "candles", "portal", "jumpscare", "creepyEye", "heartbeat", "dealWithIt", "boom", "censored", "loading",
-  "speedLines", "wasted", "deepFried", "lensFlare"]);
+  "speedLines", "wasted", "deepFried", "lensFlare", "lightsOut", "longHair", "grin", "subliminal", "staticFace", "crawler", "hands", "eyesAll", "doll"]);
 const FX = {
   particleFlow(c, w, h, p, o) {
     for (const q of parts(N(90, o), 11)) {
@@ -1830,6 +1834,262 @@ const POST_FX = {
     ctx.fillStyle = "#3b2f1a"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(o.text, x + fs * 0.6, y + ah / 2 + 1);
   },
 };
+/* ---------- Jumpscares: a slow build-up, then the scare near the end of each loop ---------- */
+function hBase(ctx, src, w, h, dark) {
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h);
+  if (dark >= 1) return;
+  ctx.filter = `brightness(${Math.round(100 - dark * 90)}%) saturate(${Math.round(100 - dark * 70)}%)`;
+  ctx.drawImage(src, 0, 0); ctx.filter = "none";
+}
+function hGrain(ctx, w, h, r, a) { for (let i = 0; i < 1200; i++) { const v = r() < 0.5 ? 0 : 255; ctx.fillStyle = `rgba(${v},${v},${v},${r() * a})`; ctx.fillRect(r() * w, r() * h, 2, 2); } }
+function hVignette(ctx, w, h, a) {
+  const R = Math.hypot(w, h) / 2, g = ctx.createRadialGradient(w / 2, h / 2, R * 0.3, w / 2, h / 2, R);
+  g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, `rgba(0,0,0,${a})`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+}
+function hFlash(ctx, w, h, e, rgb) { ctx.fillStyle = `rgba(${rgb},${0.4 * (1 - e)})`; ctx.fillRect(0, 0, w, h); }
+function hSlices(ctx, w, h, r, n, amt) {
+  if (n < 1) return;
+  if (tmpB.width !== w || tmpB.height !== h) { tmpB.width = w; tmpB.height = h; }
+  const b = tmpB.getContext("2d"); b.clearRect(0, 0, w, h); b.drawImage(ctx.canvas, 0, 0);
+  for (let i = 0; i < n; i++) { const y = r() * h, sh = 4 + r() * 40; ctx.drawImage(tmpB, 0, y, w, sh, (r() - 0.5) * amt, y, w, sh); }
+}
+function hStatic(ctx, w, h, r, a) {
+  ctx.save(); ctx.globalAlpha *= a;
+  for (let y = 0; y < h; y += 3) for (let x = 0; x < w; x += 15) { const v = Math.floor(r() * 255); ctx.fillStyle = `rgb(${v},${v},${v})`; ctx.fillRect(x, y, 15, 3); }
+  ctx.restore();
+}
+const quadAt = (a, b, c2, t) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * b + t * t * c2;
+function drawHairGirl(c, R) {
+  const g = c.createRadialGradient(0, -R * 0.1, R * 0.1, 0, 0, R * 0.9); g.addColorStop(0, "#e2e7ea"); g.addColorStop(1, "#5a6066");
+  c.fillStyle = g; blob(c, 0, 0, R * 0.62, R * 0.85);
+  const ex = -R * 0.22, ey = -R * 0.12;
+  c.fillStyle = "#f2eee6"; blob(c, ex, ey, R * 0.19, R * 0.12);
+  c.strokeStyle = "rgba(150,0,0,.7)"; c.lineWidth = Math.max(1, R * 0.008);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; c.beginPath(); c.moveTo(ex + Math.cos(a) * R * 0.15, ey + Math.sin(a) * R * 0.09); c.lineTo(ex + Math.cos(a) * R * 0.06, ey + Math.sin(a) * R * 0.04); c.stroke(); }
+  c.fillStyle = "#111"; c.beginPath(); c.arc(ex, ey, R * 0.035, 0, TAU); c.fill();
+  c.strokeStyle = "rgba(20,20,30,.6)"; c.lineWidth = R * 0.03; c.beginPath(); c.ellipse(ex, ey, R * 0.19, R * 0.13, 0, 0, TAU); c.stroke();
+  c.fillStyle = "#140c0c"; blob(c, R * 0.05, R * 0.45, R * 0.1, R * 0.07);
+  const rr = mulberry(77);
+  for (let i = 0; i < 170; i++) {
+    const x0 = (rr() * 2 - 1) * R * 0.75, sway = (rr() - 0.5) * R * 0.3, gap = x0 > ex - R * 0.18 && x0 < ex + R * 0.16;
+    c.strokeStyle = `rgba(${(8 + rr() * 14) | 0},${(8 + rr() * 12) | 0},${(10 + rr() * 14) | 0},${gap ? 0.12 : 0.92})`;
+    c.lineWidth = R * (0.01 + rr() * 0.025);
+    c.beginPath(); c.moveTo(x0 * 0.6, -R * 0.95); c.quadraticCurveTo(x0 + sway, R * 0.2, x0 * 1.15 + sway * 1.5, R * (1.4 + rr() * 0.6)); c.stroke();
+  }
+}
+function drawGirlFull(c, x, y, s) {
+  c.save(); c.translate(x, y);
+  c.fillStyle = "#cfd5d8"; c.beginPath(); c.moveTo(-s * 0.14, -s * 0.25); c.lineTo(s * 0.14, -s * 0.25); c.lineTo(s * 0.24, s * 0.5); c.lineTo(-s * 0.24, s * 0.5); c.closePath(); c.fill();
+  c.strokeStyle = "#bfc5c8"; c.lineWidth = s * 0.03; c.lineCap = "round";
+  for (const sx of [-1, 1]) { c.beginPath(); c.moveTo(sx * s * 0.14, -s * 0.22); c.lineTo(sx * s * 0.19, s * 0.15); c.stroke(); }
+  c.translate(0, -s * 0.36); drawHairGirl(c, s * 0.12); c.restore();
+}
+function drawGrin(c, R, open) {
+  const r = mulberry(5);
+  const g = c.createRadialGradient(0, 0, R * 0.2, 0, 0, R * 1.3); g.addColorStop(0, "rgba(40,36,34,0.9)"); g.addColorStop(1, "rgba(0,0,0,0)");
+  c.fillStyle = g; c.fillRect(-R * 1.4, -R * 1.4, R * 2.8, R * 2.8);
+  for (const sx of [-1, 1]) {
+    c.fillStyle = "#000"; c.beginPath(); c.ellipse(sx * R * 0.38, -R * 0.35, R * 0.16, R * 0.11, -sx * 0.25, 0, TAU); c.fill();
+    c.fillStyle = "#fff"; c.shadowColor = "#fff"; c.shadowBlur = R * 0.05; c.beginPath(); c.arc(sx * R * 0.36, -R * 0.34, R * 0.025, 0, TAU); c.fill(); c.shadowBlur = 0;
+  }
+  const mw = R * 1.05, top = R * 0.05 - R * 0.15, d1 = R * 0.05 + R * (0.25 + 0.35 * open) * 0.6, d2 = R * 0.05 + R * (0.25 + 0.35 * open) * 1.9;
+  c.fillStyle = "#050000"; c.beginPath(); c.moveTo(-mw, top); c.quadraticCurveTo(0, d1, mw, top); c.quadraticCurveTo(0, d2, -mw, top); c.fill();
+  c.fillStyle = "#e6dcc0";
+  const n = 26, tw = (mw * 2) / n * 0.45;
+  for (let i = 1; i < n; i++) {
+    const t = i / n, x = lerp(-mw, mw, t), yU = quadAt(top, d1, top, t), yL = quadAt(top, d2, top, t), len = (yL - yU) * (0.35 + r() * 0.15);
+    c.beginPath(); c.moveTo(x - tw, yU); c.lineTo(x + tw, yU); c.lineTo(x, yU + len); c.fill();
+    c.beginPath(); c.moveTo(x - tw, yL); c.lineTo(x + tw, yL); c.lineTo(x, yL - len); c.fill();
+  }
+}
+function drawEye(c, x, y, R, open, lx, ly, col) {
+  if (open <= 0.06) { c.strokeStyle = "rgba(200,200,200,.35)"; c.lineWidth = 1; c.beginPath(); c.moveTo(x - R, y); c.quadraticCurveTo(x, y + R * 0.2, x + R, y); c.stroke(); return; }
+  c.save(); c.translate(x, y); c.scale(1, open);
+  c.beginPath(); c.moveTo(-R, 0); c.quadraticCurveTo(0, -R * 0.85, R, 0); c.quadraticCurveTo(0, R * 0.85, -R, 0); c.closePath();
+  c.fillStyle = "#e8e2d6"; c.fill(); c.save(); c.clip();
+  c.fillStyle = col; c.beginPath(); c.arc(lx * R * 0.35, ly * R * 0.2, R * 0.38, 0, TAU); c.fill();
+  c.fillStyle = "#000"; c.beginPath(); c.arc(lx * R * 0.35, ly * R * 0.2, R * 0.17, 0, TAU); c.fill(); c.restore();
+  c.strokeStyle = "#000"; c.lineWidth = R * 0.06; c.stroke(); c.restore();
+}
+function drawDoll(c, R, evil) {
+  c.fillStyle = "#2a1a10"; blob(c, 0, -R * 0.15, R * 0.95, R * 0.95);
+  const g = c.createRadialGradient(-R * 0.2, -R * 0.3, R * 0.1, 0, 0, R * 0.85); g.addColorStop(0, "#fff8f0"); g.addColorStop(1, "#d9c8b8");
+  c.fillStyle = g; blob(c, 0, R * 0.05, R * 0.72, R * 0.8);
+  c.fillStyle = "#2a1a10"; c.beginPath(); c.moveTo(-R * 0.8, -R * 0.2); c.quadraticCurveTo(0, -R * 1.0, R * 0.8, -R * 0.2);
+  c.quadraticCurveTo(R * 0.4, -R * 0.45, 0, -R * 0.38); c.quadraticCurveTo(-R * 0.4, -R * 0.45, -R * 0.8, -R * 0.2); c.fill();
+  c.fillStyle = "rgba(230,110,130,.45)"; blob(c, -R * 0.38, R * 0.25, R * 0.12, R * 0.08); blob(c, R * 0.38, R * 0.25, R * 0.12, R * 0.08);
+  c.strokeStyle = "rgba(40,20,10,.8)"; c.lineWidth = R * 0.012;
+  const rr = mulberry(31);
+  for (let i = 0; i < 4; i++) { let x = (rr() - 0.5) * R * 0.9, y = (rr() - 0.5) * R; c.beginPath(); c.moveTo(x, y); for (let s = 0; s < 6; s++) { x += (rr() - 0.5) * R * 0.15; y += (rr() - 0.3) * R * 0.12; c.lineTo(x, y); } c.stroke(); }
+  for (const sx of [-1, 1]) {
+    c.fillStyle = "#000"; blob(c, sx * R * 0.28, -R * 0.02, R * 0.17, R * 0.2);
+    if (evil > 0) { c.fillStyle = `rgba(255,20,20,${evil})`; c.shadowColor = "#f00"; c.shadowBlur = R * 0.08; c.beginPath(); c.arc(sx * R * 0.28, 0, R * 0.04, 0, TAU); c.fill(); c.shadowBlur = 0; }
+    else { c.fillStyle = "rgba(255,255,255,.7)"; dot(c, sx * R * 0.24, -R * 0.08, R * 0.03); }
+    c.strokeStyle = "#000"; c.lineWidth = R * 0.012;
+    for (let k = 0; k < 5; k++) { const a = -Math.PI * 0.85 + k * 0.18; c.beginPath(); c.moveTo(sx * R * 0.28 + Math.cos(a) * R * 0.17, -R * 0.02 + Math.sin(a) * R * 0.2); c.lineTo(sx * R * 0.28 + Math.cos(a) * R * 0.25, -R * 0.02 + Math.sin(a) * R * 0.28); c.stroke(); }
+  }
+  c.fillStyle = "#b0303a"; blob(c, 0, R * 0.42, R * (0.09 + 0.12 * evil), R * (0.04 + 0.22 * evil));
+  if (evil > 0.1) { c.fillStyle = "#000"; blob(c, 0, R * 0.43, R * (0.06 + 0.1 * evil), R * (0.02 + 0.19 * evil)); }
+}
+function drawCrawler(c, s) {
+  c.fillStyle = "#cfc8bd"; c.strokeStyle = "#cfc8bd"; c.lineCap = "round"; c.lineJoin = "round";
+  const limbs = [[-0.18, -0.05, -0.55, -0.25, -0.62, 0.35], [0.18, -0.05, 0.55, -0.3, 0.66, 0.35], [-0.12, 0.1, -0.42, 0.05, -0.4, 0.42], [0.12, 0.1, 0.45, 0.0, 0.42, 0.42]];
+  for (const [ax, ay, kx, ky, fx, fy] of limbs) {
+    c.lineWidth = s * 0.04; c.beginPath(); c.moveTo(ax * s, ay * s); c.lineTo(kx * s, ky * s); c.lineTo(fx * s, fy * s); c.stroke();
+    c.lineWidth = s * 0.012; for (let f = -2; f <= 2; f++) { c.beginPath(); c.moveTo(fx * s, fy * s); c.lineTo(fx * s + f * s * 0.03, fy * s + s * 0.07); c.stroke(); }
+  }
+  blob(c, 0, 0, s * 0.2, s * 0.14);
+  c.strokeStyle = "rgba(90,80,70,.7)"; c.lineWidth = s * 0.008;
+  for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(0, -s * 0.02 + i * s * 0.025, s * 0.15, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke(); }
+  c.fillStyle = "#d8d1c6"; blob(c, 0, s * 0.06, s * 0.12, s * 0.14);
+  c.fillStyle = "#000"; blob(c, -s * 0.045, s * 0.04, s * 0.032, s * 0.04); blob(c, s * 0.045, s * 0.04, s * 0.032, s * 0.04); blob(c, 0, s * 0.14, s * 0.04, s * 0.055);
+  c.fillStyle = "#fff"; dot(c, -s * 0.045, s * 0.04, s * 0.005); dot(c, s * 0.045, s * 0.04, s * 0.005);
+  c.strokeStyle = "#111"; c.lineWidth = s * 0.006;
+  for (let i = 0; i < 20; i++) { const x = (i / 19 - 0.5) * s * 0.22; c.beginPath(); c.moveTo(x * 0.6, -s * 0.06); c.quadraticCurveTo(x, s * 0.05, x * 1.2, s * 0.2); c.stroke(); }
+}
+function drawArm(c, len, wd, curl) {
+  const fade = c.createLinearGradient(0, 0, Math.max(1, len), 0); fade.addColorStop(0, "rgba(20,18,16,0.2)"); fade.addColorStop(0.7, "#a9a196"); fade.addColorStop(1, "#d6cfc4");
+  c.fillStyle = fade; c.strokeStyle = "rgba(60,50,40,.5)"; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(0, -wd * 0.6); c.lineTo(len, -wd * 0.45); c.lineTo(len, wd * 0.45); c.lineTo(0, wd * 0.6); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = "#d6cfc4"; blob(c, len + wd * 0.4, 0, wd * 0.6, wd * 0.55);
+  c.lineCap = "round"; c.strokeStyle = "#d6cfc4";
+  for (let f = 0; f < 5; f++) {
+    const a = (f - 2) * 0.32 + (f === 0 ? -0.5 : 0), fl = wd * (f === 0 ? 0.9 : f === 2 ? 1.7 : 1.4), bx = len + wd * 0.7, by = (f - 2) * wd * 0.22;
+    const mx = bx + Math.cos(a) * fl * 0.6, my = by + Math.sin(a) * fl * 0.6;
+    c.lineWidth = wd * 0.22; c.beginPath(); c.moveTo(bx, by); c.lineTo(mx, my); c.lineTo(mx + Math.cos(a + curl) * fl * 0.5, my + Math.sin(a + curl) * fl * 0.5); c.stroke();
+  }
+}
+function drawStalker(c, x, yFeet, s) {
+  c.save(); c.translate(x, yFeet); c.fillStyle = "#020202"; c.strokeStyle = "rgba(255,255,255,.07)"; c.lineWidth = 1.5;
+  c.beginPath(); c.ellipse(0, -s * 0.9, s * 0.07, s * 0.09, 0, 0, TAU); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(-s * 0.1, -s * 0.8); c.quadraticCurveTo(0, -s * 0.84, s * 0.1, -s * 0.8); c.lineTo(s * 0.13, 0); c.lineTo(-s * 0.13, 0); c.closePath(); c.fill(); c.stroke();
+  c.lineWidth = s * 0.025; c.strokeStyle = "#020202"; c.lineCap = "round";
+  for (const sx of [-1, 1]) { c.beginPath(); c.moveTo(sx * s * 0.09, -s * 0.78); c.lineTo(sx * s * 0.16, -s * 0.2); c.stroke(); }
+  c.fillStyle = "#fff"; c.shadowColor = "#fff"; c.shadowBlur = s * 0.06;
+  dot(c, -s * 0.026, -s * 0.91, s * 0.014); dot(c, s * 0.026, -s * 0.91, s * 0.014); c.restore();
+}
+Object.assign(POST_FX, {
+  lightsOut(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 9);
+    if (t >= 0.74) {
+      const e = (t - 0.74) / 0.26; hBase(ctx, src, w, h, 0.85);
+      scaryFace(ctx, o.cx + (r() - 0.5) * 30, o.cy + (r() - 0.5) * 30, Math.min(w, h) * 0.6 * o.size * (0.8 + e * 0.6), mulberry(3), o.col);
+      hSlices(ctx, w, h, r, 8 * (1 - e), 50); hFlash(ctx, w, h, e, "255,0,0"); hGrain(ctx, w, h, r, 0.3); return;
+    }
+    const steps = [0.12, 0.28, 0.44, 0.58], dists = [0.25, 0.4, 0.6, 0.85];
+    const off = steps.findIndex((s) => t >= s && t < s + 0.05);
+    if (off >= 0 || r() < 0.06) {
+      hBase(ctx, src, w, h, 0.94);
+      if (off >= 0) drawStalker(ctx, o.cx, o.cy + h * 0.45, h * dists[off] * o.size * 1.3);
+      hGrain(ctx, w, h, r, 0.2);
+    } else { hBase(ctx, src, w, h, 0.12 + 0.08 * Math.sin(TAU * p * o.k * 7)); hVignette(ctx, w, h, 0.6); }
+  },
+  longHair(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 21);
+    if (t < 0.7) {
+      hBase(ctx, src, w, h, 0.55 + 0.1 * Math.sin(TAU * p * o.k * 3)); hVignette(ctx, w, h, 0.75);
+      if (r() > 0.05) drawGirlFull(ctx, o.cx + (r() < 0.1 ? (r() - 0.5) * 8 : 0), o.cy + h * 0.15, h * 0.3 * o.size * (1 + t * 0.7));
+      hGrain(ctx, w, h, r, 0.18); return;
+    }
+    if (t < 0.73) { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h); return; }
+    const e = (t - 0.73) / 0.27; hBase(ctx, src, w, h, 0.95);
+    ctx.save(); ctx.translate(o.cx + (r() - 0.5) * 24, o.cy + (r() - 0.5) * 24); ctx.rotate((r() - 0.5) * 0.06);
+    drawHairGirl(ctx, Math.min(w, h) * 0.62 * o.size * (1 + e * 0.25)); ctx.restore();
+    hSlices(ctx, w, h, r, 6 * (1 - e), 30); hFlash(ctx, w, h, e, "200,0,0"); hGrain(ctx, w, h, r, 0.3);
+  },
+  grin(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 31);
+    if (t < 0.76) {
+      hBase(ctx, src, w, h, 0.2 + clamp(t / 0.55, 0, 1) * 0.78); hVignette(ctx, w, h, 0.8);
+      if (t > 0.4) { ctx.save(); ctx.globalAlpha *= clamp((t - 0.4) / 0.25, 0, 1); ctx.translate(o.cx, o.cy); drawGrin(ctx, Math.min(w, h) * 0.18 * o.size, 0); ctx.restore(); }
+      hGrain(ctx, w, h, r, 0.15); return;
+    }
+    const e = (t - 0.76) / 0.24; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h);
+    ctx.save(); ctx.translate(o.cx + (r() - 0.5) * 30 * (1 - e), o.cy + (r() - 0.5) * 30 * (1 - e)); drawGrin(ctx, Math.min(w, h) * 0.55 * o.size * (1 + e * 0.3), 1); ctx.restore();
+    hSlices(ctx, w, h, r, 8 * (1 - e), 40); hFlash(ctx, w, h, e, "255,0,0"); hGrain(ctx, w, h, r, 0.3);
+  },
+  subliminal(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 41);
+    hBase(ctx, src, w, h, 0.15); hGrain(ctx, w, h, r, 0.12);
+    const wins = [0.21, 0.47, 0.63, 0.9], hit = wins.findIndex((s, i) => t >= s && t < s + (i === 3 ? 0.06 : 0.025));
+    if (hit < 0) return;
+    const F = canvas(w, h), fx = F.getContext("2d"), R = Math.min(w, h) * 0.5 * o.size, which = [0, 2, 1, 1][hit];
+    fx.fillStyle = "#000"; fx.fillRect(0, 0, w, h);
+    if (which === 0) scaryFace(fx, o.cx, o.cy, R, mulberry(3), o.col);
+    else { fx.save(); fx.translate(o.cx, o.cy); which === 1 ? drawGrin(fx, R, 1) : drawHairGirl(fx, R); fx.restore(); }
+    ctx.globalAlpha *= hit === 3 ? 0.95 : 0.7;
+    ctx.filter = hit === 3 ? "contrast(1.5)" : "invert(1) contrast(1.6)"; ctx.drawImage(F, (r() - 0.5) * 20, 0); ctx.filter = "none";
+    hSlices(ctx, w, h, r, 6, 40);
+  },
+  staticFace(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 51), R = Math.min(w, h) * 0.5 * o.size;
+    if (t < 0.78) {
+      hBase(ctx, src, w, h, 0.3 + 0.5 * t); hStatic(ctx, w, h, r, 0.15 + 0.7 * clamp(t / 0.7, 0, 1));
+      if (t > 0.3) { ctx.save(); ctx.globalAlpha *= clamp((t - 0.3) / 0.4, 0, 1) * 0.35 * (0.6 + 0.4 * r()); scaryFace(ctx, o.cx, o.cy, R, mulberry(3), o.col); ctx.restore(); }
+      return;
+    }
+    const e = (t - 0.78) / 0.22; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h);
+    scaryFace(ctx, o.cx + (r() - 0.5) * 30, o.cy + (r() - 0.5) * 30, R * (1.2 + e * 0.5), mulberry(3), o.col);
+    hSlices(ctx, w, h, r, 10, 60); hStatic(ctx, w, h, r, 0.25); hFlash(ctx, w, h, e, "255,0,0");
+  },
+  crawler(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 61);
+    if (t < 0.74) {
+      hBase(ctx, src, w, h, 0.6); hVignette(ctx, w, h, 0.8);
+      const step = Math.floor(t * 14) / 14, s = Math.min(w, h) * (0.18 + step * 0.55) * o.size; // jerky stop-motion approach
+      ctx.save(); ctx.translate(o.cx + (r() < 0.15 ? (r() - 0.5) * 10 : 0), o.cy + h * 0.25 - step * h * 0.1); drawCrawler(ctx, s); ctx.restore();
+      hGrain(ctx, w, h, r, 0.2); return;
+    }
+    const e = (t - 0.74) / 0.26, s = Math.min(w, h) * 2.2 * o.size * (1 + e * 0.3);
+    hBase(ctx, src, w, h, 0.95);
+    ctx.save(); ctx.translate(o.cx + (r() - 0.5) * 30, o.cy + (r() - 0.5) * 30 - s * 0.08); drawCrawler(ctx, s); ctx.restore();
+    hSlices(ctx, w, h, r, 8 * (1 - e), 50); hFlash(ctx, w, h, e, "255,0,0"); hGrain(ctx, w, h, r, 0.3);
+  },
+  hands(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 71);
+    hBase(ctx, src, w, h, 0.35 + 0.4 * clamp(t / 0.8, 0, 1)); hVignette(ctx, w, h, 0.7);
+    const rr = mulberry(171 + seedOff);
+    for (let i = 0; i < N(14, o); i++) {
+      const start = 0.15 + rr() * 0.5, side = Math.floor(rr() * 4), u = rr(), wd = (24 + rr() * 14) * o.size, curl = 0.3 + rr() * 0.6, jit = rr();
+      if (t < start) continue;
+      const grow = clamp((t - start) / 0.25, 0, 1);
+      const [x0, y0] = side === 0 ? [u * w, -20] : side === 1 ? [w + 20, u * h] : side === 2 ? [u * w, h + 20] : [-20, u * h];
+      const ang = Math.atan2(o.cy - y0, o.cx - x0) + (jit - 0.5) * 0.5;
+      const len = Math.hypot(o.cx - x0, o.cy - y0) * (0.55 + jit * 0.35) * (1 - Math.pow(1 - grow, 3)) + Math.sin(TAU * (p * o.k * 6 + jit)) * 4;
+      ctx.save(); ctx.translate(x0, y0); ctx.rotate(ang); drawArm(ctx, len, wd, curl * (0.6 + 0.4 * Math.sin(TAU * (p * o.k * 3 + jit)))); ctx.restore();
+    }
+    if (t > 0.88) { const e = (t - 0.88) / 0.12; scaryFace(ctx, o.cx + (r() - 0.5) * 20, o.cy, Math.min(w, h) * 0.5 * o.size * (1 + e * 0.4), mulberry(3), o.col); hSlices(ctx, w, h, r, 6, 40); hFlash(ctx, w, h, e, "255,255,255"); }
+    hGrain(ctx, w, h, r, 0.18);
+  },
+  eyesAll(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 81);
+    hBase(ctx, src, w, h, 0.55 + 0.4 * clamp(t / 0.6, 0, 1));
+    const rr = mulberry(181 + seedOff);
+    for (let i = 0; i < Math.round(30 * o.dens); i++) {
+      const x = rr() * w, y = rr() * h, R = (10 + rr() * 26) * o.size, start = 0.25 + rr() * 0.5, bp = rr();
+      if (t < start) continue;
+      let open = clamp((t - start) / 0.06, 0, 1);
+      if (frac(t * 4 + bp) < 0.03) open = 0.05;
+      if (t > 0.85) open = 1.15;
+      const dx = o.cx - x, dy = o.cy - y, d = Math.hypot(dx, dy) || 1;
+      drawEye(ctx, x, y, R, open, dx / d, dy / d, o.col);
+    }
+    if (t > 0.85) { const e = (t - 0.85) / 0.15; drawEye(ctx, o.cx, o.cy, Math.min(w, h) * 0.35 * o.size * (1 + e * 0.3), 1, (r() - 0.5) * 0.2, (r() - 0.5) * 0.2, o.col); hFlash(ctx, w, h, e, "255,0,0"); }
+    hGrain(ctx, w, h, r, 0.15);
+  },
+  doll(ctx, src, w, h, p, o) {
+    const t = frac(p * o.k), r = mulberry(Math.floor(p * 400) + 91), R = Math.min(w, h) * 0.3 * o.size;
+    if (t < 0.72) {
+      hBase(ctx, src, w, h, 0.45); hVignette(ctx, w, h, 0.7);
+      ctx.save(); ctx.translate(o.cx, o.cy); ctx.rotate((t / 0.72) * 0.35); drawDoll(ctx, R, 0); ctx.restore();
+      hGrain(ctx, w, h, r, 0.15); return;
+    }
+    const e = (t - 0.72) / 0.28; hBase(ctx, src, w, h, 0.9);
+    ctx.save(); ctx.translate(o.cx + (r() - 0.5) * 24, o.cy + (r() - 0.5) * 24); ctx.rotate(0.35 + Math.PI * 0.4 * Math.min(1, e / 0.08)); drawDoll(ctx, R * (2.1 + e * 0.4), 1); ctx.restore();
+    hSlices(ctx, w, h, r, 8 * (1 - e), 50); hFlash(ctx, w, h, e, "255,0,0"); hGrain(ctx, w, h, r, 0.3);
+  },
+});
+
 function sampleScene(c, w, h) {
   const g = c.createLinearGradient(0, 0, w, h); g.addColorStop(0, "#3a5bd9"); g.addColorStop(1, "#d93a8c");
   c.fillStyle = g; c.fillRect(0, 0, w, h); c.fillStyle = "#ffd36b"; c.beginPath(); c.arc(w * 0.5, h * 0.45, h * 0.22, 0, TAU); c.fill();
@@ -2243,7 +2503,8 @@ function panelEffect() {
   S.sel = L.id;
   L.x ??= 0; L.y ??= 0;
   // phase used for each thumbnail, so effects that only show up part of the loop are visible
-  const THUMB_P = { jumpscare: 0.86, wasted: 0.8, tbc: 0.8, invertFlash: 0.02, boom: 0.08, dealWithIt: 0.7, lightning: 0.03, shadowFigure: 0.3 };
+  const THUMB_P = { jumpscare: 0.86, wasted: 0.8, tbc: 0.8, invertFlash: 0.02, boom: 0.08, dealWithIt: 0.7, lightning: 0.03, shadowFigure: 0.3,
+    lightsOut: 0.86, longHair: 0.85, grin: 0.85, subliminal: 0.92, staticFace: 0.86, crawler: 0.85, hands: 0.8, eyesAll: 0.8, doll: 0.85 };
   const paint = (cv, v) => {
     const x = cv.getContext("2d"); x.fillStyle = "#0b0d12"; x.fillRect(0, 0, 120, 90);
     if (v === "none") return;
